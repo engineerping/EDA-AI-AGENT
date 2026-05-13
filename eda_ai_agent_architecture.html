@@ -1,0 +1,205 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.info{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 18px;margin-top:10px;min-height:80px;transition:opacity .2s}
+.info-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.info-body{font-size:12px;color:var(--color-text-secondary);line-height:1.7}
+.tag{display:inline-block;font-size:10px;padding:1px 8px;border-radius:10px;margin:5px 3px 0 0;background:var(--color-background-secondary);color:var(--color-text-secondary);font-weight:500}
+.hint{font-size:11px;color:var(--color-text-tertiary);text-align:center;margin-bottom:6px}
+</style>
+
+<p class="hint">点击任意组件查看详情</p>
+
+<svg width="100%" viewBox="0 0 680 490" role="img">
+<title>EDA-AI-Agent 系统架构图</title>
+<desc>五层架构：用户输入层、编排层、四个专用子智能体、工具层、输出文件层，含 ERC 反馈循环</desc>
+<defs>
+  <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<!-- User -->
+<g class="node c-gray" onclick="show('user')">
+  <rect x="240" y="30" width="200" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="47" text-anchor="middle" dominant-baseline="central">User (Chat)</text>
+  <text class="ts" x="340" y="63" text-anchor="middle" dominant-baseline="central">Circuit requirements input</text>
+</g>
+
+<!-- Arrow User→Orch -->
+<line x1="340" y1="74" x2="340" y2="98" stroke="var(--t)" stroke-width="1" marker-end="url(#ar)" fill="none"/>
+
+<!-- Orchestrator -->
+<g class="node c-purple" onclick="show('orch')">
+  <rect x="40" y="100" width="600" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="120" text-anchor="middle" dominant-baseline="central">Orchestrator Agent</text>
+  <text class="ts" x="340" y="137" text-anchor="middle" dominant-baseline="central">ReAct loop · task routing · context management · iteration budget</text>
+</g>
+
+<!-- Fan arrows Orch→4 Agents -->
+<line x1="340" y1="152" x2="118" y2="188" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)" fill="none"/>
+<line x1="340" y1="152" x2="266" y2="188" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)" fill="none"/>
+<line x1="340" y1="152" x2="414" y2="188" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)" fill="none"/>
+<line x1="340" y1="152" x2="562" y2="188" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)" fill="none"/>
+
+<!-- 4 Sub-agents -->
+<g class="node c-teal" onclick="show('req')">
+  <rect x="49" y="190" width="138" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="118" y="210" text-anchor="middle" dominant-baseline="central">Req. Agent</text>
+  <text class="ts" x="118" y="227" text-anchor="middle" dominant-baseline="central">Req. elicitation</text>
+</g>
+
+<g class="node c-teal" onclick="show('design')">
+  <rect x="197" y="190" width="138" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="266" y="210" text-anchor="middle" dominant-baseline="central">Design Agent</text>
+  <text class="ts" x="266" y="227" text-anchor="middle" dominant-baseline="central">Component select</text>
+</g>
+
+<g class="node c-teal" onclick="show('gen')">
+  <rect x="345" y="190" width="138" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="414" y="210" text-anchor="middle" dominant-baseline="central">KiCad Gen.</text>
+  <text class="ts" x="414" y="227" text-anchor="middle" dominant-baseline="central">Schematic gen.</text>
+</g>
+
+<g class="node c-teal" onclick="show('valid')">
+  <rect x="493" y="190" width="138" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="562" y="210" text-anchor="middle" dominant-baseline="central">Validation</text>
+  <text class="ts" x="562" y="227" text-anchor="middle" dominant-baseline="central">ERC / DRC check</text>
+</g>
+
+<!-- Arrows agents→tools -->
+<line x1="118" y1="242" x2="139" y2="288" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)" fill="none"/>
+<line x1="266" y1="242" x2="300" y2="288" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)" fill="none"/>
+<line x1="414" y1="242" x2="370" y2="288" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)" fill="none"/>
+<line x1="562" y1="242" x2="535" y2="288" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)" fill="none"/>
+
+<!-- 3 Tools -->
+<g class="node c-amber" onclick="show('compdb')">
+  <rect x="50" y="290" width="178" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="139" y="310" text-anchor="middle" dominant-baseline="central">Component DB</text>
+  <text class="ts" x="139" y="327" text-anchor="middle" dominant-baseline="central">RAG · datasheets</text>
+</g>
+
+<g class="node c-amber" onclick="show('kicad-api')">
+  <rect x="248" y="290" width="178" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="337" y="310" text-anchor="middle" dominant-baseline="central">KiCad Python API</text>
+  <text class="ts" x="337" y="327" text-anchor="middle" dominant-baseline="central">pcbnew · scripting</text>
+</g>
+
+<g class="node c-amber" onclick="show('kicad-cli')">
+  <rect x="446" y="290" width="178" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="535" y="310" text-anchor="middle" dominant-baseline="central">KiCad CLI</text>
+  <text class="ts" x="535" y="327" text-anchor="middle" dominant-baseline="central">ERC / DRC headless</text>
+</g>
+
+<!-- Arrows tools→outputs -->
+<line x1="139" y1="342" x2="155" y2="378" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)" fill="none"/>
+<line x1="337" y1="342" x2="340" y2="378" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)" fill="none"/>
+<line x1="535" y1="342" x2="525" y2="378" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)" fill="none"/>
+
+<!-- 3 Outputs -->
+<g class="node c-green" onclick="show('out-bom')">
+  <rect x="70" y="380" width="170" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="155" y="400" text-anchor="middle" dominant-baseline="central">BOM CSV</text>
+  <text class="ts" x="155" y="417" text-anchor="middle" dominant-baseline="central">Bill of Materials</text>
+</g>
+
+<g class="node c-green" onclick="show('out-sch')">
+  <rect x="255" y="380" width="170" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="400" text-anchor="middle" dominant-baseline="central">.kicad_sch</text>
+  <text class="ts" x="340" y="417" text-anchor="middle" dominant-baseline="central">Schematic file</text>
+</g>
+
+<g class="node c-green" onclick="show('out-erc')">
+  <rect x="440" y="380" width="170" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="525" y="400" text-anchor="middle" dominant-baseline="central">ERC Report</text>
+  <text class="ts" x="525" y="417" text-anchor="middle" dominant-baseline="central">Errors + fix guide</text>
+</g>
+
+<!-- Feedback dashed arrow: Validation right → up → into Orchestrator right -->
+<path d="M631 216 L648 216 L648 126 L641 126" fill="none" stroke="var(--t)" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ar)" opacity="0.7"/>
+<text class="ts" x="643" y="168" text-anchor="end" opacity="0.7">↺ on error</text>
+
+<!-- Memory store label (floating, in gap between tools and agents) -->
+<rect x="42" y="254" width="100" height="26" rx="5" fill="none" stroke="var(--b)" stroke-width="0.5" stroke-dasharray="3 2" opacity="0.5"/>
+<text class="ts" x="92" y="272" text-anchor="middle" opacity="0.6">Memory store</text>
+
+</svg>
+
+<div class="info" id="info-box">
+  <div class="info-title">EDA-AI-Agent — 系统概览</div>
+  <div class="info-body">五层架构：用户对话 → 编排 → 专用子智能体 → 工具执行 → 文件输出。右侧虚线为 ERC 错误时的反馈循环（Validation → Orchestrator → 重新设计）。点击任意组件查看实现细节。</div>
+</div>
+
+<script>
+const D = {
+  user:{
+    t:'User (Chat) — 用户对话层',
+    b:'用户以自然语言描述电路需求（例："我需要一个机器人主控板，STM32F4，带 4 路电机驱动、IMU 接口、USB 通信"）。Agent 会主动追问遗漏的约束：工作电压范围、最大电流、封装偏好（SMD/THT）、是否贴片打样（嘉立创）、预算上限。所有对话历史累积为"需求文档"向下传递。',
+    tags:['CLI','Web UI','Multi-turn Dialog','Structured Output']
+  },
+  orch:{
+    t:'Orchestrator Agent — ReAct 主循环',
+    b:'核心 ReAct 循环：接收需求 → Thought（判断下一步）→ Action（调用子 agent）→ Observation（收集结果）→ 循环直到设计通过验证。负责：① 维护全局设计状态（需求文档 + BOM 草稿 + 当前方案版本）② 路由到正确的子 agent ③ 管理 iteration budget（最多 N 轮，防无限循环）④ 遇到 ERC 错误时触发修复循环。',
+    tags:['LangGraph','LangChain','ReAct','Iteration Budget','Python']
+  },
+  req:{
+    t:'Requirements Agent — 需求拆解',
+    b:'系统性地将模糊需求转换为结构化规格：功能需求（MCU 型号/时钟/内存）、电气约束（Vin/Vout/Imax/纹波）、接口需求（GPIO/SPI/I2C/UART/CAN 数量）、环境约束（工作温度/振动/防护等级）、商业约束（成本/认证/交期）。输出 JSON 格式的需求文档，未确认项标注 "TBD"。',
+    tags:['Prompt Engineering','JSON Schema','Structured Output','Multi-turn']
+  },
+  design:{
+    t:'Design Agent — 电路设计与选型',
+    b:'根据需求文档选择最优电路拓扑，从 Component DB 检索合适元器件（MCU、电源 IC、传感器、驱动芯片）。生成完整 BOM 并标注每个器件的选型理由。重要功能：主动补充容易被忽略的设计要点——去耦电容规格与位置、上拉/下拉电阻值、ESD 保护器件、晶振负载电容、热设计注意事项、PCB 布局建议。',
+    tags:['RAG','Component DB','BOM Generation','Circuit Topology','JLCPCB']
+  },
+  gen:{
+    t:'KiCad Gen. Agent — 原理图生成',
+    b:'将 BOM + 连接关系转换为 KiCad .kicad_sch 文件。两种实现方式：① 模板法 — 用字符串模板直接生成 S-expression 格式文本（最简单，无需安装 KiCad）② pcbnew API 法 — 调用 KiCad Python 绑定以编程方式构建原理图。关键挑战：从 KiCad 官方库中精确匹配元件符号和封装，保证 net 名称全局一致性，正确放置 PWR_FLAG 等电源符号。',
+    tags:['KiCad Python API','S-expression','.kicad_sch','pcbnew','Template']
+  },
+  valid:{
+    t:'Validation Agent — ERC/DRC 验证',
+    b:'调用 KiCad CLI 在无头（headless）模式运行 ERC：`kicad-cli sch erc --output report.xml design.kicad_sch`。解析 XML 报告，将错误翻译为中文并给出修复方案。常见 ERC 错误：pin unconnected（引脚悬空）、power pin not driven（缺少驱动）、missing PWR_FLAG、net 命名冲突。错误时将报告传回 Orchestrator 触发下一轮修复。',
+    tags:['KiCad CLI','ERC','XML Parsing','Feedback Loop','Subprocess']
+  },
+  compdb:{
+    t:'Component DB — 元器件知识库',
+    b:'向量化存储元器件数据手册摘要（STM32 系列、ESP32、LM317/AMS1117 电源 IC、L298N/DRV8833 电机驱动、MPU6050 IMU 等）。查询时用 Embedding 检索相关器件，返回：推荐型号 + 参数对比 + 嘉立创 JLCPCB SMT 零件编号（C 开头）+ 价格 + 库存 + 参考设计。推荐用 pgvector（你已有 RDS PostgreSQL）。实时库存可接 JLCPCB API。',
+    tags:['pgvector','Chroma','RAG','text-embedding','JLCPCB API','Datasheet']
+  },
+  'kicad-api':{
+    t:'KiCad Python API (pcbnew)',
+    b:'KiCad 内置 Python 绑定，可以编程方式操作原理图和 PCB。核心 API：pcbnew.LoadBoard() 加载文件、Footprint() 添加封装、SCH_SYMBOL 添加元件符号。更简单的替代方案：直接用 Python 字符串模板生成 .kicad_sch 的 S-expression 格式——该格式是人类可读的树形文本，LLM 可以直接学习后生成，无需安装 KiCad Python 环境。',
+    tags:['pcbnew','Python','S-expression','KiCad 7/8','API','Template Engine']
+  },
+  'kicad-cli':{
+    t:'KiCad CLI — 无头模式自动化',
+    b:'KiCad 7+ 提供完整 CLI，支持无界面（无 GUI）运行所有验证和导出命令。关键命令：`kicad-cli sch erc`（ERC 检查，输出 XML 报告）、`kicad-cli sch export --format pdf`（导出 PDF 原理图）、`kicad-cli pcb drc`（PCB DRC 检查）。Agent 用 Python subprocess 调用，捕获 stdout/stderr，解析 XML 错误列表，自动生成修复方案。',
+    tags:['KiCad CLI 7+','subprocess','XML','ERC','DRC','PDF Export']
+  },
+  'out-bom':{
+    t:'BOM CSV — 物料清单',
+    b:'完整的采购清单：Reference Designator（R1/C1/U1）、Component Value（10kΩ/100nF）、Footprint（0402/SOT-23）、制造商型号、JLCPCB SMT 零件编号（可直接用于嘉立创一站式下单）、参考单价。Agent 还会标注哪些器件有国产平替（如 CH340 替代 FT232）来降低成本，并标注基本库（免费贴片）vs 扩展库（收费）。',
+    tags:['CSV','JLCPCB SMT','BOM','国产平替','嘉立创']
+  },
+  'out-sch':{
+    t:'.kicad_sch — 原理图文件',
+    b:'KiCad 7/8 格式原理图，S-expression 纯文本，可用 Git 版本控制。包含：元件符号 + 属性（Value/Footprint/Datasheet URL）+ 网络连接（wire/bus/label）+ 电源符号（+3V3/+5V/GND）+ 层次设计支持。可直接在 KiCad 中打开验证，手动微调后进行 PCB Layout，最终导出 Gerber 文件给嘉立创打样。',
+    tags:['.kicad_sch','S-expression','KiCad 7/8','Git-friendly','Gerber']
+  },
+  'out-erc':{
+    t:'ERC Report — 电气规则检查报告',
+    b:'每个错误包含：错误类型（中英对照）+ 所在位置（Sheet/Component/Pin）+ 严重程度（Error/Warning）+ AI 生成的修复建议。Agent 区分"阻塞性错误"（电路无法工作，必须修复）和"最佳实践警告"（可以忽略但建议改进），帮助用户建立优先级。修复建议直接引用具体的 KiCad 操作步骤（如"在 U1 的 VCC 引脚添加 100nF 去耦电容至 GND"）。',
+    tags:['ERC','Error Classification','Fix Guide','Priority','KiCad Steps']
+  }
+};
+
+function show(key){
+  const d=D[key];
+  if(!d) return;
+  const tags=d.tags.map(t=>`<span class="tag">${t}</span>`).join('');
+  document.getElementById('info-box').innerHTML=`<div class="info-title">${d.t}</div><div class="info-body">${d.b}</div><div>${tags}</div>`;
+}
+</script>

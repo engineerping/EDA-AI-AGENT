@@ -1,0 +1,313 @@
+
+<style>
+  h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-sans)}
+  .wrap{display:flex;gap:20px;padding:8px 0;align-items:flex-start}
+  .pyramid-col{flex:0 0 280px}
+  .detail-col{flex:1;min-width:0}
+  .layer{cursor:pointer;transition:transform .15s,filter .15s;margin-bottom:4px;position:relative}
+  .layer:hover{transform:scaleX(1.02);filter:brightness(1.04)}
+  .layer.active{outline:2px solid var(--color-border-primary);border-radius:4px}
+  .layer-inner{display:flex;align-items:center;justify-content:center;flex-direction:column;padding:10px 16px;border-radius:6px;text-align:center}
+  .layer-num{font-size:10px;font-weight:500;opacity:.7;margin-bottom:2px}
+  .layer-title{font-size:13px;font-weight:500}
+  .layer-sub{font-size:11px;opacity:.75;margin-top:2px}
+  .tip{font-size:12px;color:var(--color-text-tertiary);text-align:center;margin-top:8px}
+  .detail-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:16px 20px;min-height:300px}
+  .detail-card h3{font-size:15px;font-weight:500;margin:0 0 4px;color:var(--color-text-primary)}
+  .detail-card .tagline{font-size:12px;color:var(--color-text-secondary);margin:0 0 14px}
+  .section-title{font-size:11px;font-weight:500;color:var(--color-text-secondary);letter-spacing:.04em;text-transform:uppercase;margin:12px 0 6px}
+  .items{list-style:none;margin:0;padding:0}
+  .items li{font-size:13px;color:var(--color-text-primary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;gap:8px;align-items:flex-start;line-height:1.5}
+  .items li:last-child{border-bottom:none}
+  .dot{width:6px;height:6px;border-radius:50%;margin-top:6px;flex-shrink:0}
+  .badge{display:inline-block;font-size:10px;font-weight:500;padding:1px 7px;border-radius:20px;margin-left:6px;vertical-align:middle}
+  .real-world{margin-top:14px;padding:10px 14px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);font-size:12px;color:var(--color-text-secondary);line-height:1.6}
+  .real-world strong{color:var(--color-text-primary);font-weight:500}
+
+  .l0-bg{background:linear-gradient(135deg,#2a2560 0%,#3C3489 100%);color:#CECBF6}
+  .l1-bg{background:linear-gradient(135deg,#085041 0%,#0F6E56 100%);color:#9FE1CB}
+  .l2-bg{background:linear-gradient(135deg,#3B1528 0%,#72243E 100%);color:#F4C0D1}
+  .l3-bg{background:linear-gradient(135deg,#412402 0%,#854F0B 100%);color:#FAC775}
+  .l4-bg{background:linear-gradient(135deg,#042C53 0%,#185FA5 100%);color:#B5D4F4}
+  .l5-bg{background:linear-gradient(135deg,#173404 0%,#3B6D11 100%);color:#C0DD97}
+
+  .dot-l0{background:#7F77DD}
+  .dot-l1{background:#1D9E75}
+  .dot-l2{background:#D4537E}
+  .dot-l3{background:#EF9F27}
+  .dot-l4{background:#378ADD}
+  .dot-l5{background:#639922}
+
+  .badge-l0{background:#EEEDFE;color:#3C3489}
+  .badge-l1{background:#E1F5EE;color:#085041}
+  .badge-l2{background:#FBEAF0;color:#72243E}
+  .badge-l3{background:#FAEEDA;color:#633806}
+  .badge-l4{background:#E6F1FB;color:#0C447C}
+  .badge-l5{background:#EAF3DE;color:#27500A}
+
+  @media(prefers-color-scheme:dark){
+    .badge-l0{background:#26215C;color:#CECBF6}
+    .badge-l1{background:#04342C;color:#9FE1CB}
+    .badge-l2{background:#4B1528;color:#F4C0D1}
+    .badge-l3{background:#412402;color:#FAC775}
+    .badge-l4{background:#042C53;color:#B5D4F4}
+    .badge-l5{background:#173404;color:#C0DD97}
+  }
+</style>
+
+<h2 class="sr-only">AI Agent 架构金字塔 — 点击每层查看详情</h2>
+
+<div class="wrap">
+  <div class="pyramid-col">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+
+      <div class="layer active" id="layer-5" onclick="show(5)" style="width:100%">
+        <div class="layer-inner l5-bg" style="min-height:48px">
+          <div class="layer-num">L5 · 顶层</div>
+          <div class="layer-title">评估 / 安全 / 治理</div>
+          <div class="layer-sub">Eval · Safety · Governance</div>
+        </div>
+      </div>
+
+      <div class="layer" id="layer-4" onclick="show(4)" style="width:100%">
+        <div class="layer-inner l4-bg" style="min-height:52px">
+          <div class="layer-num">L4</div>
+          <div class="layer-title">多智能体 / 编排</div>
+          <div class="layer-sub">Multi-Agent · Orchestration</div>
+        </div>
+      </div>
+
+      <div class="layer" id="layer-3" onclick="show(3)" style="width:100%">
+        <div class="layer-inner l3-bg" style="min-height:56px">
+          <div class="layer-num">L3</div>
+          <div class="layer-title">接口 / 部署</div>
+          <div class="layer-sub">Interfaces · Deploy · MCP</div>
+        </div>
+      </div>
+
+      <div class="layer" id="layer-2" onclick="show(2)" style="width:100%">
+        <div class="layer-inner l2-bg" style="min-height:60px">
+          <div class="layer-num">L2</div>
+          <div class="layer-title">工具系统 / 记忆</div>
+          <div class="layer-sub">Tools · Memory · RAG</div>
+        </div>
+      </div>
+
+      <div class="layer" id="layer-1" onclick="show(1)" style="width:100%">
+        <div class="layer-inner l1-bg" style="min-height:64px">
+          <div class="layer-num">L1</div>
+          <div class="layer-title">Agent 核心引擎</div>
+          <div class="layer-sub">Loop · Prompt · Context</div>
+        </div>
+      </div>
+
+      <div class="layer" id="layer-0" onclick="show(0)" style="width:100%">
+        <div class="layer-inner l0-bg" style="min-height:68px">
+          <div class="layer-num">L0 · 底层</div>
+          <div class="layer-title">LLM / 模型基础</div>
+          <div class="layer-sub">Model · Token · API</div>
+        </div>
+      </div>
+    </div>
+    <p class="tip">点击层级查看详情</p>
+  </div>
+
+  <div class="detail-col">
+    <div class="detail-card" id="detail"></div>
+  </div>
+</div>
+
+<script>
+const data = {
+  5:{
+    title:"L5 · 评估 / 安全 / 治理",
+    cls:"l5",
+    tagline:"Agent 要上生产，必须可测、可审、可控",
+    sections:[
+      {title:"评估体系 (Evals)",items:[
+        "构建 Eval Dataset：golden traces、human-labeled 数据集",
+        "确定性评估：JSON schema 校验、tool_call 路由准确率",
+        "LLM-as-Judge：用强模型评估弱模型的输出质量",
+        "轨迹评估 (Trajectory Eval)：评估多步 agent 的决策路径",
+        "Harness 三智能体架构：Planner → Generator → Evaluator 分离"
+      ]},
+      {title:"安全与对齐",items:[
+        "Prompt Injection 防御：隔离 system / user / tool_result 边界",
+        "权限最小化：工具调用 Approval 机制（Hermes 的 codex-style 白名单）",
+        "容器隔离：read-only root filesystem、dropped Linux capabilities",
+        "数据隐私：inference 完成后不持久化（Harness AI 严格数据策略）",
+        "OPA 治理：Policy-as-code 控制 agent 行为（Harness pipeline RBAC）"
+      ]},
+      {title:"可观测性 (Observability)",items:[
+        "Trace / Span：记录每次 LLM 调用、工具执行的完整链路",
+        "Token 成本追踪：input/output token 用量与费用监控",
+        "失败模式分析：hallucination 检测、无限循环检测、budget 超限告警",
+        "审计日志：每个 agent action 可溯源（Harness pipeline 天然审计）"
+      ]}
+    ],
+    real:"Hermes Agent 内置 Atropos RL 环境 + 批量轨迹生成，将 agent 的运行数据直接用于下一代模型的训练 —— eval 即数据飞轮。"
+  },
+  4:{
+    title:"L4 · 多智能体 / 编排",
+    cls:"l4",
+    tagline:"一个 Agent 不够用时，如何拆分、协作、并行",
+    sections:[
+      {title:"多 Agent 模式",items:[
+        "单智能体 (Single Agent)：一个 loop 处理所有任务，简单场景首选",
+        "主从模式 (Orchestrator + Subagent)：主 agent 拆解任务、下发给子 agent",
+        "管道模式 (Pipeline)：Planner → Executor → Reviewer 线性流水线",
+        "并行模式：ThreadPoolExecutor 同时运行多个 subagent（Hermes 8 workers）",
+        "角色型 Multi-Agent：CrewAI / AutoGen 的 Researcher + Writer + Critic"
+      ]},
+      {title:"任务分解与调度",items:[
+        "ReAct 分解：将复杂目标拆成 Thought → Action → Observation 序列",
+        "Plan-and-Execute：先生成完整 plan，再逐步执行（减少 mid-task 偏离）",
+        "Cron / 定时调度：Hermes 的 jobs.json，自然语言描述定时任务",
+        "事件驱动：commit / bug / test failure 触发 agent（Harness 事件触发）"
+      ]},
+      {title:"状态共享与隔离",items:[
+        "共享 Memory Store：多 agent 读写同一个 SQLite / Vector DB",
+        "隔离 Session：每个 subagent 有独立 session history，主 agent 汇总",
+        "Context 压缩传递：超长 context 先压缩再传给下游 agent",
+        "Harness Knowledge Graph：agents 共享 pipeline / infra / service 状态图"
+      ]}
+    ],
+    real:"Harness 将 agent 设计为 pipeline-native steps，5 个子 agent 合并为 1 个统一 DevOps agent（Claude Opus 4.5），速度和准确率大幅提升。"
+  },
+  3:{
+    title:"L3 · 接口 / 部署 / MCP",
+    cls:"l3",
+    tagline:"Agent 怎么被用户触达，怎么连接外部世界",
+    sections:[
+      {title:"用户接口层",items:[
+        "CLI (命令行)：最常见，hermes / claude / claw 等终端交互",
+        "消息平台网关：Telegram、Discord、Slack、WhatsApp、Email（Hermes Gateway）",
+        "IDE 集成：VS Code / JetBrains 通过 ACP (Agent Client Protocol) 接入",
+        "Web UI / REST API：对外暴露 HTTP 接口，集成进已有系统"
+      ]},
+      {title:"MCP (Model Context Protocol)",items:[
+        "MCP 是什么：Anthropic 发布的标准化工具接入协议，类似 LSP for AI",
+        "两种传输：stdio（本地进程）和 Streamable HTTP（远程服务）",
+        "MCP Server：封装外部能力（Google Drive、Calendar、GitHub 等）",
+        "MCP Client：agent 内的 MCP 客户端，发现并调用 server 上的工具",
+        "工具命名约定：mcp_<server>_<tool_name>，按需加载、policy 过滤"
+      ]},
+      {title:"执行后端 / 运行时",items:[
+        "Local：在本机执行 shell 命令，状态跨 tool call 持久（cd/env 保留）",
+        "Docker：容器化隔离，read-only rootfs，dropped capabilities",
+        "SSH：远程服务器执行，适合连接云主机",
+        "Serverless：Modal / Daytona，闲时休眠，按需唤醒，接近零成本",
+        "Harness Pipeline Engine：agent 作为 pipeline step，天然继承 RBAC/secrets"
+      ]}
+    ],
+    real:"OpenClaw 通过 Skills Hub / agentskills.io 开放了社区技能市场；Hermes 支持 18+ LLM providers，通过 fallback_providers 实现自动故障转移。"
+  },
+  2:{
+    title:"L2 · 工具系统 / 记忆 / RAG",
+    cls:"l2",
+    tagline:"Agent 的手（工具）和大脑（记忆）",
+    sections:[
+      {title:"工具系统 (Tool Use)",items:[
+        "Tool 定义：JSON Schema 描述工具名、参数类型、描述 —— 模型据此决策",
+        "Function Calling：OpenAI 格式；Anthropic tool_use；各厂商略有差异",
+        "Tool Registry：集中注册所有工具，运行时动态加载（Hermes 61 工具 / 52 toolsets）",
+        "并行工具调用：一次 LLM 响应中触发多个 tool_call，并行执行后汇总结果",
+        "工具类别：web_search、code_exec、file_read/write、browser、image_gen、TTS"
+      ]},
+      {title:"记忆系统 (Memory)",items:[
+        "对话历史 (Episodic)：session messages list，跨轮携带",
+        "短期工作记忆：当前 context window 内的 scratchpad",
+        "长期持久记忆：SQLite / 文件系统存储（Hermes MEMORY.md + USER.md）",
+        "语义记忆 (Semantic)：Vector DB 存储知识，Embedding 检索",
+        "技能记忆 (Procedural)：agent 自主创建并复用的 skills / snippets"
+      ]},
+      {title:"RAG & Context 管理",items:[
+        "RAG 流程：Query → Embed → Retrieve → Augment → Generate",
+        "Context 压缩：中间轮对话摘要，保留首尾 + 关键信息（Hermes context_compressor）",
+        "Prompt Caching：Anthropic prefix caching 降低重复 prompt 成本",
+        "Embedding 模型：text-embedding-3-small / BGE / nomic-embed 等",
+        "向量数据库：Chroma、Pinecone、pgvector（PostgreSQL 扩展）、Qdrant"
+      ]}
+    ],
+    real:"Hermes 的 prompt_builder.py 按固定顺序拼装：SOUL.md（人格）→ MEMORY.md（长期记忆）→ USER.md（用户信息）→ Skills → AGENTS.md（行为规范）→ 工具指引 → 模型特定指令。"
+  },
+  1:{
+    title:"L1 · Agent 核心引擎",
+    cls:"l1",
+    tagline:"Agent Loop：所有行为的驱动核心",
+    sections:[
+      {title:"Agent Loop（ReAct 循环）",items:[
+        "Step 1 — Perceive：接收 user input / event / tool_result",
+        "Step 2 — Think：LLM 生成 Thought（推理）+ Action（工具调用决策）",
+        "Step 3 — Act：执行 tool_call，获取 Observation",
+        "Step 4 — Reflect：将 Observation 加入历史，判断是否继续循环",
+        "终止条件：生成 final response / 达到 IterationBudget / 触发 stop 命令"
+      ]},
+      {title:"Prompt 工程",items:[
+        "System Prompt 结构：角色 → 能力 → 约束 → 工具指引 → 输出格式",
+        "Few-Shot 示例：在 prompt 中给出 tool_call 样本，提升 function calling 准确率",
+        "Chain-of-Thought：让模型先输出推理步骤再给答案（<thinking> 标签）",
+        "XML 结构化输出：用 <plan>/<action>/<result> 标签分离结构与内容",
+        "Persona / SOUL.md：定义 agent 性格、语气、行为边界（OpenClaw 实践）"
+      ]},
+      {title:"Provider 与 API 管理",items:[
+        "三种 API 模式：chat_completions（OpenAI 兼容）/ anthropic_messages / codex_responses",
+        "Provider 路由：(provider, model) → (api_mode, api_key, base_url) 映射",
+        "Fallback 链：primary → fallback_1 → fallback_2，自动故障转移",
+        "Streaming 处理：SSE 流式接收 token，实时展示到用户界面",
+        "Token Budget 控制：max_tokens、iteration budget，防止无限消耗"
+      ]}
+    ],
+    real:"Hermes AIAgent 核心流程：user_input → process_input() → run_conversation() → build_system_prompt() → resolve_runtime_provider() → API call → tool_calls? → handle_function_call() → loop → final_response → display → save SessionDB"
+  },
+  0:{
+    title:"L0 · LLM / 模型基础",
+    cls:"l0",
+    tagline:"理解语言模型，才能真正驾驭 Agent",
+    sections:[
+      {title:"核心概念",items:[
+        "Transformer 架构：Attention 机制、KV Cache、位置编码",
+        "Token 化：BPE 分词，context window 大小（32k / 128k / 1M token）",
+        "温度与采样：temperature、top_p、top_k 控制输出随机性",
+        "System / User / Assistant 角色：消息格式与对话状态机",
+        "Stop Sequence：控制模型在特定 token 处停止生成"
+      ]},
+      {title:"Function Calling / Tool Use",items:[
+        "Tool Schema 格式：name + description + parameters (JSON Schema)",
+        "模型如何决策：description 质量直接决定工具调用准确率",
+        "tool_choice 参数：auto / any / specific_tool 强制调用",
+        "parallel_tool_calls：同时调用多个工具（OpenAI / Anthropic 均支持）",
+        "结构化输出：JSON mode / response_format 保证输出可解析"
+      ]},
+      {title:"主流模型与提供商",items:[
+        "Anthropic：Claude Sonnet 4.6 / Opus 4.6，最强 coding & agent 能力",
+        "OpenAI：GPT-4o / o3，广泛生态，Codex 系列 reasoning 模型",
+        "开源：Qwen3 / Kimi / MiniMax / Llama 4 —— 国内模型性价比高",
+        "Nous Research：Hermes 系列，专项优化 function calling 和 tool use",
+        "路由层：OpenRouter / LiteLLM 统一多模型调用，实现 provider 无关"
+      ]}
+    ],
+    real:"Gemma 4 在 Hermes 中的 issue #7457 揭示了一个关键问题：模型将 tool call 输出在 content 字段（文本）而非 tool_calls 字段，导致 agent 无法解析执行 —— 说明理解 API 响应结构至关重要。"
+  }
+};
+
+function show(n){
+  document.querySelectorAll('.layer').forEach(l=>l.classList.remove('active'));
+  document.getElementById('layer-'+n).classList.add('active');
+  const d=data[n];
+  const cls=d.cls;
+  let html=`<h3>${d.title}</h3><p class="tagline">${d.tagline}</p>`;
+  d.sections.forEach(s=>{
+    html+=`<div class="section-title">${s.title}</div><ul class="items">`;
+    s.items.forEach(item=>{
+      html+=`<li><span class="dot dot-${cls}"></span><span>${item}</span></li>`;
+    });
+    html+=`</ul>`;
+  });
+  html+=`<div class="real-world"><strong>真实案例：</strong>${d.real}</div>`;
+  document.getElementById('detail').innerHTML=html;
+}
+show(5);
+</script>

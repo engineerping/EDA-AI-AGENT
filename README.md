@@ -14,7 +14,9 @@
 
 ---
 
-> 用自然语言描述电路需求，AI 自动完成元器件选型、原理图生成与 ERC 验证，结果直接在浏览器中预览。
+> 用自然语言描述电路需求，AI 通过国伦对话分析需求细节，自动完成元器件选型、生成.kicad_sch 格式的电路图描述文本文件，然后应用 kicad-cli 对电路图进行验证，
+最终的电路图直接在浏览器中预览，也可以在 KiCad 软件中打开。
+> 关于最流行的开源 EDA（Electronic Design Automation） 软件 KiCar，请参阅 https://www.kicad.org/ 。
 
 </div>
 
@@ -31,7 +33,8 @@
 | 电路正确性验证        | ✅ 可行    | KiCad CLI 可运行 ERC / DRC，结果反馈给 agent    |
 | 完全商业级免人工       | ❌ 当前不现实 | 复杂模拟电路、高速信号、EMC 设计仍需工程师审查              |
 
-核心依据：KiCad 7/8 的 `.kicad_sch` 格式是结构化的 S-expression 文本，LLM 可以直接生成和修改；KiCad 内置 Python 脚本 API (`pcbnew`) 可以程序化操作 PCB；KiCad CLI 支持无头模式运行 ERC/DRC 并输出报告。
+核心突破口是 KiCad 的文件格式。.kicad_sch 是 S-expression 纯文本，结构高度规则，LLM 可以直接学习并生成。这是整个 agent 可行的技术基础。
+KiCad 7/8 的 `.kicad_sch` 格式是结构化的 S-expression 文本，LLM 可以直接生成和修改；KiCad 内置 Python 脚本 API (`pcbnew`) 可以程序化操作 PCB；KiCad CLI 支持无头模式运行 ERC/DRC 并输出报告。
 
 ---
 

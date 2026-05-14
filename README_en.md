@@ -14,7 +14,8 @@
 
 ---
 
-> Describe your circuit in natural language — AI handles component selection, schematic generation, and ERC validation, with live preview in the browser.
+> Describe your circuit in natural language — AI analyzes requirements through multi-turn dialogue, automatically selects components, generates a .kicad_sch formatted schematic text file, then validates it via kicad-cli. The final schematic is previewed directly in the browser and can also be opened in the KiCad software.
+For more on KiCad, the most popular open-source EDA (Electronic Design Automation) software, see https://www.kicad.org/.
 
 </div>
 
@@ -30,7 +31,7 @@ Generating KiCad schematic files	✅ Feasible	.kicad_sch is plain-text S-express
 Auto PCB layout & routing	⚠️ Partially feasible	KiCad has Python API, but auto-layout quality is limited; complex boards need human review
 Circuit correctness validation	✅ Feasible	KiCad CLI runs ERC/DRC headlessly and returns reports for agent feedback
 Fully commercial-grade, no human review	❌ Not yet realistic	Complex analog, high-speed signals, and EMC design still require an engineer's eye
-Core rationale: KiCad 7/8 stores schematics as structured S-expression text, so LLMs can generate and modify them directly. KiCad's built-in Python scripting API (pcbnew) enables programmatic PCB operations. The KiCad CLI runs ERC/DRC in headless mode and outputs machine-readable reports.
+The core breakthrough is KiCad's file format. .kicad_sch is plain-text S-expression — highly structured and directly learnable and generatable by LLMs. This is the technical foundation that makes the entire agent feasible. KiCad 7/8's .kicad_sch format is structured S-expression text that LLMs can directly generate and modify; KiCad has a built-in Python scripting API (pcbnew) for programmatic PCB operations; and KiCad CLI supports headless ERC/DRC execution with machine-readable output.
 
 ---
 

@@ -1,8 +1,77 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fetchConfig, saveConfig, rescanLibraries, type AgentConfig } from '../api/client'
 
 interface Props {
   onClose: () => void
+}
+
+const MODEL_PRESETS = [
+  { group: 'OpenAI', models: ['openai/gpt-4o', 'openai/gpt-4o-mini', 'openai/o3-mini', 'openai/o1'] },
+  { group: 'Anthropic', models: ['anthropic/claude-opus-4-latest', 'anthropic/claude-sonnet-4-latest', 'anthropic/claude-opus-4-7', 'anthropic/claude-sonnet-4-6'] },
+  { group: 'DeepSeek', models: ['deepseek/deepseek-chat', 'deepseek/deepseek-reasoner'] },
+  { group: 'Google Gemini', models: ['gemini/gemini-2.5-pro', 'gemini/gemini-2.0-flash', 'gemini/gemini-1.5-pro'] },
+  { group: 'Qwen · 阿里云', models: ['tongyi/qwen-turbo', 'tongyi/qwen-plus', 'tongyi/qwen-max', 'tongyi/qwen-long'] },
+  { group: 'GLM · 智谱AI', models: ['zhipuai/glm-5', 'zhipuai/glm-5-flash', 'zhipuai/glm-4', 'zhipuai/glm-4-flash', 'zhipuai/glm-4-air'] },
+  { group: 'MiniMax', models: ['minimax/abab6.5-chat', 'minimax/abab6.5s-chat'] },
+  { group: 'Moonshot · 月之暗面', models: ['openai/moonshot-v1-8k', 'openai/moonshot-v1-32k', 'openai/moonshot-v1-128k'] },
+  { group: 'MiMo · 小米', models: ['ollama/mimo-7b'] },
+  { group: 'Seed · 字节跳动', models: ['openai/doubao-pro-32k', 'openai/doubao-lite-32k', 'openai/doubao-pro-128k'] },
+  { group: 'Ollama · 本地', models: ['ollama/llama3', 'ollama/qwen2.5', 'ollama/deepseek-r1', 'ollama/mistral'] },
+]
+
+function ModelCombobox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <div style={{ display: 'flex' }}>
+        <input
+          style={{ ...inputStyle, borderRadius: '8px 0 0 8px', flex: 1 }}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder="anthropic/claude-opus-4-7"
+        />
+        <button
+          type="button"
+          onClick={() => setOpen(o => !o)}
+          style={{ padding: '0 10px', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 8px 8px 0', background: open ? '#f3f4f6' : 'white', cursor: 'pointer', fontSize: 12, color: '#6b7280' }}
+        >
+          ▾
+        </button>
+      </div>
+      {open && (
+        <div style={{ position: 'absolute', top: 'calc(100% + 2px)', left: 0, right: 0, background: 'white', border: '1px solid #d1d5db', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,.12)', zIndex: 200, maxHeight: 280, overflowY: 'auto' }}>
+          {MODEL_PRESETS.map(({ group, models }) => (
+            <div key={group}>
+              <div style={{ padding: '6px 12px 2px', fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.06em', background: '#f9fafb', position: 'sticky', top: 0 }}>
+                {group}
+              </div>
+              {models.map(model => (
+                <div
+                  key={model}
+                  onMouseDown={() => { onChange(model); setOpen(false) }}
+                  style={{ padding: '6px 16px', fontSize: 13, cursor: 'pointer', color: value === model ? '#7c3aed' : '#374151', background: value === model ? '#f5f3ff' : 'transparent', fontFamily: 'monospace' }}
+                  onMouseEnter={e => { if (value !== model) (e.currentTarget as HTMLElement).style.background = '#f9fafb' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = value === model ? '#f5f3ff' : 'transparent' }}
+                >
+                  {model}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function SettingsModal({ onClose }: Props) {
@@ -38,7 +107,7 @@ export function SettingsModal({ onClose }: Props) {
         <section style={{ marginBottom: 20 }}>
           <h3 style={sectionHeader}>AI Provider</h3>
           <label style={labelStyle}>Model (LiteLLM format)</label>
-          <input style={inputStyle} value={cfg.model} onChange={e => setCfg({ ...cfg, model: e.target.value })} placeholder="anthropic/claude-opus-4-7" />
+          <ModelCombobox value={cfg.model} onChange={v => setCfg({ ...cfg, model: v })} />
           <p style={hintStyle}>e.g. openai/gpt-4o · anthropic/claude-opus-4-7 · ollama/llama3 · deepseek/deepseek-chat</p>
 
           <label style={labelStyle}>API Key</label>

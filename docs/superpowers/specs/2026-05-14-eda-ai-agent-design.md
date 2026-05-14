@@ -1,4 +1,5 @@
 # EDA-AI-Agent Design Spec
+
 **Date:** 2026-05-14  
 **Status:** Approved
 
@@ -12,14 +13,14 @@ Users describe a circuit they want to build in plain language. EDA-AI-Agent guid
 
 ## 2. Platform
 
-| Decision | Choice |
-|---|---|
-| Deployment | Local — runs on user's machine, accessed via browser |
-| Backend | Python 3.11+ · FastAPI · Uvicorn |
-| Frontend | React (TypeScript) · Vite |
-| AI routing | LiteLLM — any provider via model string + API key |
-| Config storage | `~/.eda-agent/config.json` — never sent to browser |
-| Future | LangGraph state machine (deferred until pipeline is stable) |
+| Decision       | Choice                                                      |
+| -------------- | ----------------------------------------------------------- |
+| Deployment     | Local — runs on user's machine, accessed via browser        |
+| Backend        | Python 3.11+ · FastAPI · Uvicorn                            |
+| Frontend       | React (TypeScript) · Vite                                   |
+| AI routing     | LiteLLM — any provider via model string + API key           |
+| Config storage | `~/.eda-agent/config.json` — never sent to browser          |
+| Future         | LangGraph state machine (deferred until pipeline is stable) |
 
 ---
 
@@ -143,12 +144,13 @@ class SessionState:
 
 ## 6. Component Database
 
-| Source | Contents | When built |
-|---|---|---|
-| Bundled `components.db` | ~17,000 official KiCad symbols | Ships with app (pre-built at dev time) |
-| User lib scan | User's locally installed KiCad symbols + custom libs | On first launch, merged into `components.db` |
+| Source                  | Contents                                             | When built                                   |
+| ----------------------- | ---------------------------------------------------- | -------------------------------------------- |
+| Bundled `components.db` | ~17,000 official KiCad symbols                       | Ships with app (pre-built at dev time)       |
+| User lib scan           | User's locally installed KiCad symbols + custom libs | On first launch, merged into `components.db` |
 
 **Schema:**
+
 ```sql
 CREATE TABLE components (
     lib_id TEXT PRIMARY KEY,   -- e.g. "Device:LED", "MCU_ST_STM32F4:STM32F405RGTx"
@@ -180,6 +182,7 @@ CREATE VIRTUAL TABLE components_fts USING fts5(lib_id, name, description, keywor
 ### 8.1 Layout
 
 Two-panel layout:
+
 - **Left (40%):** Chat panel — message stream, stage progress bar (Requirements → Design → Generation → Validation), input box.
 - **Right (60%):** Schematic Viewer — KiCanvas embed, download buttons (`.kicad_sch`, `BOM.csv`), ERC status bar (error count, component count, net count).
 
@@ -208,6 +211,7 @@ type ClientMessage =
 ### 8.3 Settings Modal
 
 Fields:
+
 1. **Model** — LiteLLM format string (e.g. `anthropic/claude-opus-4-7`, `openai/gpt-4o`, `ollama/llama3`)
 2. **API Key** — stored in `~/.eda-agent/config.json`, masked in UI
 3. **Base URL** — optional, for Ollama or custom OpenAI-compatible endpoints
@@ -219,6 +223,7 @@ Fields:
 ## 9. Configuration
 
 `~/.eda-agent/config.json`:
+
 ```json
 {
   "model": "anthropic/claude-opus-4-7",
@@ -235,13 +240,13 @@ Config is read/written only by `backend/config.py`. The frontend reads a **sanit
 
 ## 10. Error Handling
 
-| Scenario | Behavior |
-|---|---|
-| No API key configured | App shows settings modal on first launch |
-| LLM API error (rate limit / auth) | WebSocket sends `{ type: 'error' }`, user sees inline message |
-| KiCad CLI not found | Validation Agent skips ERC, notes "KiCad not configured" in ERC status bar |
-| ERC errors after 3 attempts | Remaining errors surfaced to user with translation, schematic still downloadable |
-| Hallucinated `lib_id` | Design Agent `search_components` returns no match → agent must search again |
+| Scenario                          | Behavior                                                                         |
+| --------------------------------- | -------------------------------------------------------------------------------- |
+| No API key configured             | App shows settings modal on first launch                                         |
+| LLM API error (rate limit / auth) | WebSocket sends `{ type: 'error' }`, user sees inline message                    |
+| KiCad CLI not found               | Validation Agent skips ERC, notes "KiCad not configured" in ERC status bar       |
+| ERC errors after 3 attempts       | Remaining errors surfaced to user with translation, schematic still downloadable |
+| Hallucinated `lib_id`             | Design Agent `search_components` returns no match → agent must search again      |
 
 ---
 

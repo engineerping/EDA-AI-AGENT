@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from backend.config import load_config, save_config
-from backend.db.build_index import build, parse_sym_file
+from backend.db.build_index import parse_sym_file
 from backend.tools.component_db import DB_PATH
 
 
@@ -42,17 +42,29 @@ def scan_and_merge() -> int:
 
     con = sqlite3.connect(DB_PATH)
     added = 0
-    for sym_dir in dirs:
-        for sym_file in sorted(sym_dir.glob("*.kicad_sym")):
-            row = parse_sym_file(sym_file)
-            if row is not None:
-                cur = con.execute(
-                    "INSERT OR IGNORE INTO components VALUES (:lib_id,:name,:description,:keywords,:category,:pin_count,:datasheet_url,:pins_json)",
-                    row,
-                )
-                added += cur.rowcount
-    con.commit()
-    con.close()
+    try:
+        for sym_dir in dirs:
+            # KiCad 10: directory-per-library format
+            symdir_dirs = list(sym_dir.glob("*.kicad_symdir"))
+            if symdir_dirs:
+                for lib_dir in sorted(symdir_dirs):
+                    for sym_file in sorted(lib_dir.glob("*.kicad_sym")):
+                        try:
+                            row = parse_sym_file(sym_file)
+                            if row is not None:
+                                cur = con.execute(
+                                    "INSERT OR IGNORE INTO components VALUES (:lib_id,:name,:description,:keywords,:category,:pin_count,:datasheet_url,:pins_json)",
+                                    row,
+                                )
+                                added += cur.rowcount
+                        except Exception as e:
+                            print(f"Scanner: skipping {sym_file.name}: {e}")
+            else:
+                # KiCad 8.x flat-library format — parse_sym_file doesn't support it
+                print(f"Scanner: {sym_dir} uses KiCad 8.x flat format — skipping (not supported)")
+        con.commit()
+    finally:
+        con.close()
 
     cfg = load_config()
     cfg.db_last_scanned = datetime.now(timezone.utc).isoformat()

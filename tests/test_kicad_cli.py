@@ -1,4 +1,5 @@
 import json, pytest
+from pathlib import Path
 from unittest.mock import patch, MagicMock
 from backend.tools.kicad_cli import run_erc, ERCResult, KiCadNotFoundError
 
@@ -20,8 +21,8 @@ def test_run_erc_parses_violations(tmp_path):
     sch.write_text("(kicad_sch)")
 
     def fake_run(cmd, **kwargs):
-        erc_output = tmp_path / "erc_report.json"
-        erc_output.write_text(MOCK_ERC_OUTPUT)
+        out_path = Path(cmd[cmd.index("--output") + 1])
+        out_path.write_text(MOCK_ERC_OUTPUT)
         m = MagicMock()
         m.returncode = 0
         return m
@@ -40,8 +41,8 @@ def test_run_erc_clean_schematic(tmp_path):
     clean_output = json.dumps({"schematic": {"error_count": 0, "warning_count": 0}, "sheets": []})
 
     def fake_run(cmd, **kwargs):
-        erc_output = tmp_path / "erc_report.json"
-        erc_output.write_text(clean_output)
+        out_path = Path(cmd[cmd.index("--output") + 1])
+        out_path.write_text(clean_output)
         m = MagicMock(); m.returncode = 0; return m
 
     with patch("backend.tools.kicad_cli._find_kicad_cli", return_value="/usr/bin/kicad-cli"), \

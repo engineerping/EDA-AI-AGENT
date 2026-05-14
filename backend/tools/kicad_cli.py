@@ -48,13 +48,19 @@ def run_erc(schematic_path: str, output_dir: str | None = None) -> ERCResult:
     with tempfile.TemporaryDirectory() as tmp:
         out_dir = output_dir or tmp
         erc_file = Path(out_dir) / "erc_report.json"
-        subprocess.run(
-            [cli, "sch", "erc", "--output", str(erc_file), schematic_path],
-            capture_output=True, text=True, check=False,
-        )
+        try:
+            subprocess.run(
+                [cli, "sch", "erc", "--output", str(erc_file), schematic_path],
+                capture_output=True, text=True, check=False,
+            )
+        except OSError as exc:
+            raise KiCadNotFoundError(f"Failed to launch kicad-cli at {cli!r}: {exc}") from exc
         if not erc_file.exists():
             return ERCResult()
-        data = json.loads(erc_file.read_text())
+        try:
+            data = json.loads(erc_file.read_text())
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"ERC report JSON is malformed: {erc_file}") from exc
 
     sch_info = data.get("schematic", {})
     violations = [

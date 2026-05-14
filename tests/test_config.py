@@ -33,3 +33,11 @@ def test_sanitized_config_masks_api_key(tmp_path):
         safe = sanitized_config()
     assert safe["api_key"] == "***"
     assert safe["model"] == "anthropic/claude-opus-4-7"
+
+def test_load_config_returns_defaults_on_corrupt_file(tmp_path):
+    cfg_file = tmp_path / "config.json"
+    cfg_file.write_text("{invalid json")
+    with patch("backend.config.CONFIG_PATH", cfg_file):
+        from backend.config import load_config
+        cfg = load_config()
+    assert cfg.model == "anthropic/claude-opus-4-7"

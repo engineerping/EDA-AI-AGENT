@@ -16,13 +16,18 @@ class AgentConfig(BaseModel):
 
 def load_config() -> AgentConfig:
     if CONFIG_PATH.exists():
-        return AgentConfig.model_validate(json.loads(CONFIG_PATH.read_text()))
+        try:
+            return AgentConfig.model_validate(json.loads(CONFIG_PATH.read_text()))
+        except Exception:
+            pass
     return AgentConfig()
 
 
 def save_config(cfg: AgentConfig) -> None:
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_PATH.parent.chmod(0o700)
     CONFIG_PATH.write_text(cfg.model_dump_json(indent=2))
+    CONFIG_PATH.chmod(0o600)
 
 
 def sanitized_config() -> dict:

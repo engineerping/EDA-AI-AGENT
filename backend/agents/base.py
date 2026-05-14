@@ -89,7 +89,7 @@ class BaseAgent:
                     for tc in delta.tool_calls:
                         idx = tc.index
                         if idx not in tool_calls_buffer:
-                            tool_calls_buffer[idx] = {"id": tc.id or "", "name": "", "args": ""}
+                            tool_calls_buffer[idx] = {"id": tc.id or "", "name": "", "args": "", "index": idx}
                         if tc.function.name:
                             tool_calls_buffer[idx]["name"] = tc.function.name
                         if tc.function.arguments:
@@ -100,12 +100,12 @@ class BaseAgent:
 
             # Execute tool calls
             tool_results = []
-            for tc in sorted(tool_calls_buffer.values(), key=lambda x: x["name"]):
+            for tc in sorted(tool_calls_buffer.values(), key=lambda x: x["index"]):
                 name, args_str = tc["name"], tc["args"]
-                args = json.loads(args_str) if args_str else {}
+                args = json.loads(args_str) if args_str.strip() else {}
                 fn = self._tools.get(name)
                 if fn is None:
-                    result = f"Error: unknown tool {name}"
+                    result = f"Error: unknown tool '{name}'"
                 else:
                     try:
                         if inspect.iscoroutinefunction(fn):
@@ -113,7 +113,7 @@ class BaseAgent:
                         else:
                             result = fn(**args)
                     except Exception as e:
-                        result = f"Tool error: {e}"
+                        raise ToolCallError(f"Tool '{name}' raised: {e}") from e
 
                 result_str = json.dumps(result) if not isinstance(result, str) else result
                 tool_results.append({"tool_call_id": tc["id"], "name": name, "content": result_str, "args": args_str})

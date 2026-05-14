@@ -50,7 +50,12 @@ def parse_sym_file(path: Path) -> dict | None:
     pin_names = re.findall(r'\(name\s+"([^"]*)"', text)
     pin_numbers = re.findall(r'\(number\s+"([^"]*)"', text)
 
-    pin_data = [{"name": p, "number": n} for p, n in zip(pin_names, pin_numbers)]
+    seen_numbers: set[str] = set()
+    pin_data: list[dict] = []
+    for p, n in zip(pin_names, pin_numbers):
+        if n not in seen_numbers:
+            seen_numbers.add(n)
+            pin_data.append({"name": p, "number": n})
 
     return {
         "lib_id": lib_id,

@@ -1,18 +1,22 @@
+<div align="center">
+
 # EDA-AI-Agent
 
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Node](https://img.shields.io/badge/Node-22-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![KiCad](https://img.shields.io/badge/KiCad-7/8-000000?logo=kicad&logoColor=white)](https://www.kicad.org/)
 [![LiteLLM](https://img.shields.io/badge/LiteLLM-1.40+-404040?logo=lightning&logoColor=white)](https://www.litellm.ai/)
-[![Node](https://img.shields.io/badge/Node-22-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![KiCad](https://img.shields.io/badge/KiCad-7/8-000000?logo=kicad&logoColor=white)](https://www.kicad.org/)
 
 [English](README_en.md) · 简体中文
 
 ---
 
 > 用自然语言描述电路需求，AI 自动完成元器件选型、原理图生成与 ERC 验证，结果直接在浏览器中预览。
+
+</div>
 
 ## 可行性评估
 

@@ -1,18 +1,22 @@
+<div align="center">
+
 # EDA-AI-Agent
 
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Node](https://img.shields.io/badge/Node-22-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![KiCad](https://img.shields.io/badge/KiCad-7/8-000000?logo=kicad&logoColor=white)](https://www.kicad.org/)
 [![LiteLLM](https://img.shields.io/badge/LiteLLM-1.40+-404040?logo=lightning&logoColor=white)](https://www.litellm.ai/)
-[![Node](https://img.shields.io/badge/Node-22-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![KiCad](https://img.shields.io/badge/KiCad-7/8-000000?logo=kicad&logoColor=white)](https://www.kicad.org/)
 
 [中文](README.md) · English
 
 ---
 
 > Describe your circuit in natural language — AI handles component selection, schematic generation, and ERC validation, with live preview in the browser.
+
+</div>
 
 ---
 
@@ -50,7 +54,7 @@ Every agent calls a LLM you configure — OpenAI, Anthropic, DeepSeek, Qwen, and
 
 ---
 
-## architecture
+## Srchitecture
 
 ![EDA-AI-Agent-architecture](./EDA-AI-Agent-architecture.png)
 

@@ -94,6 +94,15 @@ async def websocket_endpoint(ws: WebSocket):
 
             msg_type = msg.get("type")
             if msg_type == "new_session":
+                if orchestrator_task and not orchestrator_task.done():
+                    orchestrator_task.cancel()
+                    try:
+                        await orchestrator_task
+                    except asyncio.CancelledError:
+                        pass
+                orchestrator_task = None
+                if session._tmp_dir_obj is not None:
+                    session._tmp_dir_obj.cleanup()
                 session = Session(session_id, send)
                 _sessions[session_id] = session
 
@@ -111,3 +120,5 @@ async def websocket_endpoint(ws: WebSocket):
         _sessions.pop(session_id, None)
         if orchestrator_task and not orchestrator_task.done():
             orchestrator_task.cancel()
+        if session._tmp_dir_obj is not None:
+            session._tmp_dir_obj.cleanup()

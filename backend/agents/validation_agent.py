@@ -26,12 +26,14 @@ Be specific in your translations: name the component and pin, explain WHY it's a
             """Run KiCad ERC on the schematic file. Returns error_count and violations list."""
             try:
                 result = _run_erc(schematic_path)
+                self._erc_error_count = result.error_count
                 return {
                     "error_count": result.error_count,
                     "warning_count": result.warning_count,
                     "violations": result.violations,
                 }
             except KiCadNotFoundError:
+                self._erc_error_count = 0
                 return {"error_count": 0, "warning_count": 0, "violations": [],
                         "note": "KiCad CLI not configured — ERC skipped"}
 
@@ -44,6 +46,6 @@ Be specific in your translations: name the component and pin, explain WHY it's a
         def finalize_erc_report(error_count: int, violations_translated: list) -> str:
             """Submit the final ERC report with translated error messages."""
             return json.dumps({
-                "error_count": error_count,
+                "error_count": getattr(self, "_erc_error_count", error_count),
                 "violations_translated": violations_translated,
             })

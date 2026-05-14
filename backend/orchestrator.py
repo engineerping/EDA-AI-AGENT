@@ -1,5 +1,5 @@
 from __future__ import annotations
-import asyncio, json
+import asyncio, json, tempfile
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from enum import Enum
@@ -30,6 +30,7 @@ class Session:
         self.send = send
         self.state = SessionState()
         self._user_input: asyncio.Queue[str] = asyncio.Queue()
+        self._tmp_dir_obj: tempfile.TemporaryDirectory | None = None
 
     async def put_user_input(self, text: str) -> None:
         await self._user_input.put(text)

@@ -12,14 +12,16 @@ interface Props {
 
 export function SchematicViewer({ schematicContent, bom, ercReport, onDownloadSchematic, onDownloadBOM }: Props) {
   const viewerRef = useRef<HTMLElement | null>(null)
+  const prevUrlRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!schematicContent || !viewerRef.current) return
     const blob = new Blob([schematicContent], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
+    if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current)
+    prevUrlRef.current = url
     const el = viewerRef.current as any
     if (el.load) el.load(url)
-    return () => URL.revokeObjectURL(url)
   }, [schematicContent])
 
   const ercColor = !ercReport ? '#9ca3af' : ercReport.error_count === 0 ? '#15803d' : '#dc2626'

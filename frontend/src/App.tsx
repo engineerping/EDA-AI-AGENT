@@ -1,122 +1,71 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect, useState } from 'react'
+import { ChatPanel } from './components/ChatPanel'
+import { SchematicViewer } from './components/SchematicViewer'
+import { SettingsModal } from './components/SettingsModal'
+import { useAgentSocket } from './hooks/useAgentSocket'
+import { downloadSchematic, fetchConfig } from './api/client'
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [showSettings, setShowSettings] = useState(false)
+  const [needsConfig, setNeedsConfig] = useState(false)
+  const { messages, stage, schematicContent, bom, ercReport, sessionId, connected, sendMessage, newSession } = useAgentSocket()
+
+  useEffect(() => {
+    fetchConfig().then(cfg => {
+      if (!cfg.api_key || cfg.api_key === '***') setNeedsConfig(true)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (needsConfig) setShowSettings(true)
+  }, [needsConfig])
+
+  const handleDownloadBOM = () => {
+    if (!bom.length) return
+    const csv = ['lib_id,reference,value,quantity,notes', ...bom.map(b => `${b.lib_id},${b.reference},${b.value},${b.quantity},${b.notes ?? ''}`)].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = 'bom.csv'
+    a.click()
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: 'system-ui, sans-serif' }}>
+      {/* Header */}
+      <div style={{ padding: '10px 16px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white' }}>
+        <div style={{ fontWeight: 700, fontSize: 16 }}>⚡ EDA-AI-Agent</div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <button onClick={newSession} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, border: '1px solid #d1d5db', background: 'white', cursor: 'pointer' }}>
+            New Session
+          </button>
+          <button onClick={() => setShowSettings(true)} style={{ fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280' }} title="Settings">
+            ⚙
+          </button>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      </div>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      {/* Two-panel body */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        {/* Chat — 40% */}
+        <div style={{ width: '40%', borderRight: '1px solid #e5e7eb', overflow: 'hidden' }}>
+          <ChatPanel messages={messages} stage={stage} connected={connected} onSend={sendMessage} />
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        {/* Schematic — 60% */}
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <SchematicViewer
+            schematicContent={schematicContent}
+            bom={bom}
+            ercReport={ercReport}
+            sessionId={sessionId}
+            onDownloadSchematic={() => sessionId && downloadSchematic(sessionId)}
+            onDownloadBOM={handleDownloadBOM}
+          />
+        </div>
+      </div>
+
+      {showSettings && <SettingsModal onClose={() => { setShowSettings(false); setNeedsConfig(false) }} />}
+    </div>
   )
 }
-
-export default App

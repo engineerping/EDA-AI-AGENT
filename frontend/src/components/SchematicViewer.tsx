@@ -75,10 +75,3 @@ const btnStyle: React.CSSProperties = {
   cursor: 'pointer', color: '#374151',
 }
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'kicanvas-embed': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { controls?: string }, HTMLElement>
-    }
-  }
-}

@@ -27,8 +27,7 @@
 | 电路正确性验证        | ✅ 可行    | KiCad CLI 可运行 ERC / DRC，结果反馈给 agent    |
 | 完全商业级免人工       | ❌ 当前不现实 | 复杂模拟电路、高速信号、EMC 设计仍需工程师审查              |
 
-核心依据：KiCad 7/8 的 `.kicad_sch` 格式是结构化的 S-expression 文本，LLM 可以直接生成和修改；KiCad 内
-置 Python 脚本 API (`pcbnew`) 可以程序化操作 PCB；KiCad CLI 支持无头模式运行 ERC/DRC 并输出报告。
+核心依据：KiCad 7/8 的 `.kicad_sch` 格式是结构化的 S-expression 文本，LLM 可以直接生成和修改；KiCad 内置 Python 脚本 API (`pcbnew`) 可以程序化操作 PCB；KiCad CLI 支持无头模式运行 ERC/DRC 并输出报告。
 
 ---
 
@@ -41,7 +40,7 @@
     ↓
 电路设计 Agent   → 从本地 KiCad 元件库选型，输出 BOM
     ↓
-原理图生成 Agent → 生成 .kicad_sch 文件
+原理图生成 Agent → 生成 .kicad_sch 格式的 文本文件
     ↓
 ERC 验证 Agent   → 调用 KiCad CLI 检查，最多自动修复 3 次
     ↓
@@ -49,6 +48,11 @@ ERC 验证 Agent   → 调用 KiCad CLI 检查，最多自动修复 3 次
 ```
 
 每个 Agent 调用你自己配置的大模型 API，支持 OpenAI、Anthropic、DeepSeek、Qwen 等所有主流厂商。
+
+---
+
+## 架构图
+![EDA-AI-Agent-architecture](./EDA-AI-Agent-architecture.png)
 
 ---
 

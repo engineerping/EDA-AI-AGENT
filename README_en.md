@@ -26,8 +26,7 @@ Generating KiCad schematic files	✅ Feasible	.kicad_sch is plain-text S-express
 Auto PCB layout & routing	⚠️ Partially feasible	KiCad has Python API, but auto-layout quality is limited; complex boards need human review
 Circuit correctness validation	✅ Feasible	KiCad CLI runs ERC/DRC headlessly and returns reports for agent feedback
 Fully commercial-grade, no human review	❌ Not yet realistic	Complex analog, high-speed signals, and EMC design still require an engineer's eye
-Core rationale: KiCad 7/8 stores schematics as structured S-expression text, so LLMs can generate and modify them directly. KiCad's built-in Python 
-scripting API (pcbnew) enables programmatic PCB operations. The KiCad CLI runs ERC/DRC in headless mode and outputs machine-readable reports.
+Core rationale: KiCad 7/8 stores schematics as structured S-expression text, so LLMs can generate and modify them directly. KiCad's built-in Python scripting API (pcbnew) enables programmatic PCB operations. The KiCad CLI runs ERC/DRC in headless mode and outputs machine-readable reports.
 
 ---
 
@@ -40,7 +39,7 @@ Requirements Agent        → Multi-turn clarification, structured output
     ↓
 Design Agent              → Component selection from local KiCad library, outputs BOM
     ↓
-Schematic Generator        → Generates .kicad_sch file
+Schematic Generator        → Generates a .kicad_sch formatted text file 
     ↓
 ERC Validation Agent       → Runs KiCad CLI checks, auto-corrects up to 3 times
     ↓
@@ -48,6 +47,12 @@ Browser preview + download
 ```
 
 Every agent calls a LLM you configure — OpenAI, Anthropic, DeepSeek, Qwen, and more.
+
+---
+
+## architecture
+
+![EDA-AI-Agent-architecture](./EDA-AI-Agent-architecture.png)
 
 ---
 

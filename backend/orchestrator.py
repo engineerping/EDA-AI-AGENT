@@ -3,8 +3,6 @@ import asyncio, json
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
-
 
 class PipelineStage(str, Enum):
     REQUIREMENTS = "requirements"
@@ -64,18 +62,23 @@ class Orchestrator:
         req_agent = ReqAgent(session=s)
         req_result = await req_agent.run(
             messages=[{"role": "user", "content": first_message}],
-            on_token=lambda t: asyncio.ensure_future(s.emit_token(t)),
+            on_token=lambda t: asyncio.create_task(s.emit_token(t)),
         )
+        s.state.iteration_count += 1
         s.state.requirements = json.loads(req_result) if req_result.strip().startswith("{") else {"description": req_result}
 
         # --- Stage 2: Design ---
         await s.emit_stage(PipelineStage.DESIGN)
         while s.state.correction_attempts <= 3:
+            if s.state.iteration_count >= 20:
+                await s.send({"type": "error", "message": "Iteration budget exceeded (20 LLM calls)."})
+                return
             design_agent = DesignAgent(session=s)
             bom_result = await design_agent.run(
                 messages=[{"role": "user", "content": json.dumps(s.state.requirements)}],
-                on_token=lambda t: asyncio.ensure_future(s.emit_token(t)),
+                on_token=lambda t: asyncio.create_task(s.emit_token(t)),
             )
+            s.state.iteration_count += 1
             s.state.bom = json.loads(bom_result) if bom_result.strip().startswith("[") else []
 
             # --- Stage 3: KiCad Generation ---
@@ -83,8 +86,9 @@ class Orchestrator:
             gen_agent = KiCadGenAgent(session=s)
             sch_result = await gen_agent.run(
                 messages=[{"role": "user", "content": json.dumps(s.state.bom)}],
-                on_token=lambda t: asyncio.ensure_future(s.emit_token(t)),
+                on_token=lambda t: asyncio.create_task(s.emit_token(t)),
             )
+            s.state.iteration_count += 1
             s.state.schematic_content = sch_result
 
             # --- Stage 4: Validation ---
@@ -92,8 +96,9 @@ class Orchestrator:
             val_agent = ValidationAgent(session=s)
             erc_result = await val_agent.run(
                 messages=[{"role": "user", "content": sch_result}],
-                on_token=lambda t: asyncio.ensure_future(s.emit_token(t)),
+                on_token=lambda t: asyncio.create_task(s.emit_token(t)),
             )
+            s.state.iteration_count += 1
             s.state.erc_report = json.loads(erc_result) if erc_result.strip().startswith("{") else {"raw": erc_result}
 
             if s.state.erc_report.get("error_count", 0) == 0:

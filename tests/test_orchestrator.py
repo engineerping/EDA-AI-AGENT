@@ -13,8 +13,11 @@ def test_session_state_defaults():
 async def test_session_user_input_queue():
     messages = []
     async def fake_send(msg): messages.append(msg)
-
     session = Session("test-id", fake_send)
-    asyncio.get_event_loop().call_soon(lambda: asyncio.ensure_future(session.put_user_input("hello")))
+
+    async def producer():
+        await session.put_user_input("hello")
+
+    asyncio.create_task(producer())
     result = await session.wait_for_user_input()
     assert result == "hello"

@@ -30,7 +30,8 @@ Connect power pins to VCC/GND power symbols."""
     def __init__(self, session: Session) -> None:
         super().__init__()
         self._session = session
-        self._tmp_dir = tempfile.mkdtemp(prefix="eda_sch_")
+        self._tmp_dir_obj = tempfile.TemporaryDirectory(prefix="eda_sch_")
+        self._tmp_dir = self._tmp_dir_obj.name
 
         @self.tool
         def get_component_pins(lib_id: str) -> list:

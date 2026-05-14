@@ -4,6 +4,7 @@ __pycache__/
 node_modules/
 frontend/dist/
 .env
-~/.eda-agent/
+*.egg-info/
+*.db
 *.db-journal
 .superpowers/

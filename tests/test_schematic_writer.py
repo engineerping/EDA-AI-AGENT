@@ -12,6 +12,9 @@ def test_validate_balanced_parens():
 def test_validate_unbalanced_parens():
     assert validate_sexp("(a (b c)") is False
 
+def test_validate_unbalanced_extra_close():
+    assert validate_sexp("(a b))") is False
+
 def test_writer_builds_minimal_schematic():
     w = SchematicWriter()
     w.add_symbol("R1", "Device:R", x=100.0, y=100.0, value="10k")
@@ -21,6 +24,7 @@ def test_writer_builds_minimal_schematic():
     assert 'Device:R' in content
     assert 'Device:C' in content
     assert "R1" in content
+    assert validate_sexp(content) is True
 
 def test_writer_raises_on_invalid_lib_id(monkeypatch):
     import backend.tools.component_db as db_mod

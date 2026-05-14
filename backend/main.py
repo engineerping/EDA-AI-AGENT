@@ -5,10 +5,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
-from backend.config import load_config, save_config, sanitized_config
+from backend.config import load_config, save_config, sanitized_config, AgentConfig
 from backend.db.scanner import scan_and_merge
 from backend.orchestrator import Orchestrator, Session
 
@@ -43,6 +42,11 @@ async def post_config(payload: dict):
     for key in ("model", "api_key", "base_url", "kicad_cli_path"):
         if key in payload and payload[key] is not None:
             setattr(cfg, key, payload[key])
+    from pydantic import ValidationError
+    try:
+        cfg = AgentConfig.model_validate(cfg.model_dump())
+    except ValidationError as e:
+        return JSONResponse({"error": str(e)}, status_code=422)
     save_config(cfg)
     return JSONResponse({"status": "saved"})
 
@@ -82,13 +86,18 @@ async def websocket_endpoint(ws: WebSocket):
     try:
         while True:
             raw = await ws.receive_text()
-            msg = json.loads(raw)
+            try:
+                msg = json.loads(raw)
+            except json.JSONDecodeError:
+                await ws.send_json({"type": "error", "message": "Invalid JSON"})
+                continue
 
-            if msg["type"] == "new_session":
+            msg_type = msg.get("type")
+            if msg_type == "new_session":
                 session = Session(session_id, send)
                 _sessions[session_id] = session
 
-            elif msg["type"] == "user_message":
+            elif msg_type == "user_message":
                 if orchestrator_task is None or orchestrator_task.done():
                     orchestrator_task = asyncio.create_task(
                         Orchestrator(session).run(msg["content"])
@@ -97,6 +106,8 @@ async def websocket_endpoint(ws: WebSocket):
                     await session.put_user_input(msg["content"])
 
     except WebSocketDisconnect:
+        pass
+    finally:
         _sessions.pop(session_id, None)
         if orchestrator_task and not orchestrator_task.done():
             orchestrator_task.cancel()

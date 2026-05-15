@@ -135,10 +135,10 @@ cd ..
 ### 4. 启动后端
 
 ```bash
-uvicorn backend.main:app --reload
+uvicorn backend.main:app --reload --access-log
 ```
 
-后端运行在 `http://localhost:8000`。
+后端运行在 `http://localhost:8000`，请求日志实时输出到终端。
 
 ### 5. 启动前端（新开一个终端）
 
@@ -152,8 +152,39 @@ npm run dev
 ### 停止服务
 
 ```
-# 在运行后端和前端的终端分别按：
+在后端和前端的两个终端分别按：
 Ctrl+C
+```
+
+### 查看运行日志
+
+后端日志分为两类：
+
+**应用日志（自定义带颜色的日志）**
+
+```bash
+# 后端启动后，日志会实时打印：
+#   - WebSocket 连接 / 断开
+#   - 每个 pipeline stage 进入 / 完成
+#   - LLM 调用次数、ERC 检查结果、correction 次数
+#   - session 创建 / 清理
+```
+
+**HTTP 访问日志（`--access-log` 开启后可见）**
+
+```
+127.0.0.1:12345 - "GET /api/config HTTP/1.1" 200
+127.0.0.1:23456 - "POST /api/config HTTP/1.1" 200
+127.0.0.1:34567 - "POST /api/rescan HTTP/1.1" 200
+```
+
+**日志持久化（后台运行场景）**
+
+```bash
+# 将日志写入文件
+nohup uvicorn backend.main:app --reload --access-log > backend.log 2>&1 &
+# 查看实时日志
+tail -f backend.log
 ```
 
 ---

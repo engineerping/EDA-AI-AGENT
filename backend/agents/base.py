@@ -10,13 +10,15 @@ Tools that need to pause execution (ask_user) are declared as async and may awai
 an external queue.
 """
 from __future__ import annotations
-import inspect, json
+import inspect, json, logging
 from collections.abc import AsyncGenerator, Callable
 from typing import Any
 
 import litellm
 
 from backend.config import load_config
+
+logger = logging.getLogger("eda-agent.agent")
 
 
 class ToolCallError(Exception):
@@ -60,6 +62,8 @@ class BaseAgent:
     ) -> str:
         """Run the tool-call loop. Returns final text response or finalize tool args as JSON."""
         cfg = load_config()
+        agent_name = self.__class__.__name__
+        logger.info("[%s] Starting (model=%s)", agent_name, cfg.model)
         kwargs: dict[str, Any] = {
             "model": cfg.model,
             "messages": [{"role": "system", "content": self.system_prompt}] + messages,
@@ -74,7 +78,8 @@ class BaseAgent:
             kwargs.update(extra_kwargs)
 
         MAX_ITERS = 20
-        for _ in range(MAX_ITERS):
+        for i in range(1, MAX_ITERS + 1):
+            logger.info("[%s] LLM call iter %d/%d", agent_name, i, MAX_ITERS)
             collected_text = ""
             tool_calls_buffer: dict[int, dict] = {}
 
@@ -96,6 +101,7 @@ class BaseAgent:
                             tool_calls_buffer[idx]["args"] += tc.function.arguments
 
             if not tool_calls_buffer:
+                logger.info("[%s] No tool calls — returning text (len=%d)", agent_name, len(collected_text))
                 return collected_text
 
             # Execute tool calls
@@ -106,6 +112,7 @@ class BaseAgent:
                 fn = self._tools.get(name)
                 if fn is None:
                     result = f"Error: unknown tool '{name}'"
+                    logger.warning("[%s] Unknown tool: %s", agent_name, name)
                 else:
                     try:
                         if inspect.iscoroutinefunction(fn):
@@ -114,11 +121,13 @@ class BaseAgent:
                             result = fn(**args)
                     except Exception as e:
                         raise ToolCallError(f"Tool '{name}' raised: {e}") from e
+                logger.info("[%s] Tool '%s' executed", agent_name, name)
 
                 result_str = json.dumps(result) if not isinstance(result, str) else result
                 tool_results.append({"tool_call_id": tc["id"], "name": name, "content": result_str, "args": args_str})
 
                 if name == self.finalize_tool:
+                    logger.info("[%s] Finalize tool '%s' reached — returning", agent_name, name)
                     return result_str
 
             # Append assistant + tool results to messages for next iteration
@@ -129,4 +138,5 @@ class BaseAgent:
             for tr in tool_results:
                 kwargs["messages"].append({"role": "tool", "tool_call_id": tr["tool_call_id"], "content": tr["content"]})
 
+        logger.warning("[%s] Max iterations reached", agent_name)
         return "Max iterations reached."

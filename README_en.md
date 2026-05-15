@@ -131,10 +131,10 @@ cd ..
 ### 4. Start the backend (terminal 1)
 
 ```bash
-uvicorn backend.main:app --reload
+uvicorn backend.main:app --reload --access-log
 ```
 
-Backend runs at `http://localhost:8000`.
+Backend runs at `http://localhost:8000`. Request logs are printed to this terminal in real time.
 
 ### 5. Start the frontend (terminal 2)
 
@@ -148,6 +148,33 @@ Frontend runs at `http://localhost:5173` — open it in your browser.
 ### Stop the services
 
 Press `Ctrl+C` in each terminal running the backend and frontend.
+
+### Viewing logs
+
+Two log streams from the backend:
+
+**Application logs (custom structured output)**
+
+After starting the backend, you'll see real-time entries for:
+- WebSocket connect / disconnect
+- Each pipeline stage entry and completion
+- LLM call counts, ERC results, correction attempts
+- Session creation and cleanup
+
+**HTTP access logs (`--access-log` flag enabled above)**
+
+```
+127.0.0.1:12345 - "GET /api/config HTTP/1.1" 200
+127.0.0.1:23456 - "POST /api/config HTTP/1.1" 200
+127.0.0.1:34567 - "POST /api/rescan HTTP/1.1" 200
+```
+
+**Persist logs to file (for background runs)**
+
+```bash
+nohup uvicorn backend.main:app --reload --access-log > backend.log 2>&1 &
+tail -f backend.log
+```
 
 ---
 

@@ -59,6 +59,9 @@ Every agent calls a LLM you configure — OpenAI, Anthropic, DeepSeek, Qwen, and
 
 ![EDA-AI-Agent-architecture](./EDA-AI-Agent-architecture.png)
 
+## Running_result
+![Running_result](./Running_result.png)
+
 ---
 
 ## Requirements

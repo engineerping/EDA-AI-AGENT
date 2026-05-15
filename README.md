@@ -61,6 +61,9 @@ ERC 验证 Agent   → 调用 KiCad CLI 检查，最多自动修复 3 次
 ## 架构图
 ![EDA-AI-Agent-architecture](./EDA-AI-Agent-architecture.png)
 
+## 运行效果
+![Running_result](./Running_result.png)
+
 ---
 
 ## 环境要求

@@ -1,437 +1,202 @@
-# RAG_core_concepts
+# 突破大语言模型局限：RAG技术的核心流程与关键概念解读
 
 ## 一、什么是 RAG
 
-如果 AI Model是发动机，那么 AI Agent 就是汽车，而 RAG 就是行车时的参考地图。
+如果 AI Model 是发动机，那么 AI Agent 就是自动驾驶汽车，而 RAG 就是行车时的参考地图。
 
-RAG：Retrieval-Augmented Generation （检索增强生成）
+RAG：Retrieval-Augmented Generation（检索-增强 生成）
 
 它的核心思想是：
-
-> “先从外部知识库检索相关内容，再让 LLM 基于这些内容生成回答。”
-
+> "先从外部知识库检索相关内容，再让 LLM 基于这些内容生成回答。"
 也就是说：
-
 ```text
 RAG = 检索（Retrieval） + 生成（Generation）
 ```
 
 ---
-
-# 二、为什么需要 RAG
+## 二、为什么需要 RAG
 
 因为大语言模型本身有几个问题：
-
-1. 知识有截止日期
-2. 不知道企业私有数据
-3. 容易产生幻觉（Hallucination）
-4. 无法实时更新知识
+1. 容易产生幻觉（Hallucination）；
+2. 不知道企业私有数据；
+3. 知识有截止日期；
+4. 无法实时更新知识。
 
 例如：
-
 ```text
-“公司 2025 年报销制度是什么？”
+"在公司如何申请年假？"
+```
+普通 GPT 不可能知道，因为这些数据没有训练进模型。所以：
+> RAG 的目标就是让模型能够"临时查资料"，而不是把所有知识都训练进模型。
+
+---
+## 三、RAG 开发的核心流程细节
+
+概括：
+```text
+1. 文档切片（Chunking）
+ ↓
+2. 向量化（Embedding）
+ ↓
+3. 将向量存入向量数据库（Vector Database）
+ ↓
+4. 用户输入（Prompt）
+ ↓
+5. 检索（Retrieval）
+ ↓
+6. 生成回答（Generation）
 ```
 
-普通 GPT 不可能知道。
-
-因为这些数据没有训练进模型。
-
-所以：
-
-# RAG 的目标就是让模型能够“临时查资料”。
-
-而不是把所有知识都训练进模型。
-
----
-
-# 三、RAG 的核心流程
-
-标准 RAG 流程如下：
-
-```text
-用户问题
- ↓
-Embedding（向量化）
- ↓
-Vector Search（向量检索）
- ↓
-找到相关文档
- ↓
-拼接 Prompt
- ↓
-LLM 生成回答
-```
-
----
-
-# 四、RAG 的几个核心概念
-
----
-
-## 1. Chunking（文档切块）
-
-因为 LLM 的 Context Window 有限，
-
-不能直接把整本书都输入进去。
-
-所以需要：
-
+细节：
+### 1. Chunking（文档切块）
+因为 LLM 的 Context Window 有限，不能直接把整本书都输入进去。所以需要：
 ```text
 长文档 → 切成小块（Chunk）
 ```
+例如：每块 500 tokens，或按段落切分。Chunk 太小会丢上下文，Chunk 太大会降低检索精度。
 
-例如：
-
-* 每块 500 tokens
-* 或按段落切分
-
-Chunk 太小会丢上下文，
-
-Chunk 太大会降低检索精度。
-
----
-
-## 2. Embedding（向量化）
-
+### 2. Embedding（向量化）
 Embedding 的本质是：
-
-# “把文本转换成向量”
+> "把文本转换成向量"
 
 例如：
-
 ```text
-“猫”
+"猫"
 → [0.12, -0.88, ...]
 ```
+向量能够表达语义相似度，例如猫、狗、宠物在向量空间里会比较接近。
 
-向量能够表达语义相似度。
+### 3. Vector Database（向量数据库）
+Embedding 之后，需要把向量存起来。常见向量数据库包括：pgvector、Pinecone、Milvus、Weaviate、Chroma。
 
-例如：
+### 4. Prompt（用户输入）
+对用户输入的问题做 embedding；【注意这里不同于对文档做 embedding】
 
-```text
-猫、狗、宠物
-```
+### 5. Retrieval（检索）
+用户提问后，系统会：去向量库搜索最相似的 chunk。
+例如用户问"如何申请年假？"，系统会找到"员工年假制度"相关文档。
 
-它们在向量空间里会比较接近。
-
----
-
-## 3. Vector Database（向量数据库）
-
-Embedding 之后，
-
-需要把向量存起来。
-
-常见向量数据库包括：
-
-* pgvector
-* Pinecone
-* Milvus
-* Weaviate
-* Chroma
-
----
-
-## 4. Retrieval（检索）
-
-用户提问后：
-
-系统会：
-
-1. 对问题做 embedding
-2. 去向量库搜索最相似的 chunk
-
-例如：
-
-用户问：
-
-```text
-“如何申请年假？”
-```
-
-系统会找到：
-
-```text
-“员工年假制度”
-```
-
-相关文档。
-
----
-
-## 5. Generation（生成）
-
-最后：
-
-系统会把：
-
-```text
-用户问题 + 检索结果
-```
-
-一起交给 LLM。
-
-例如：
-
+### 6. Generation（生成）
+最后，系统会把用户问题 + 检索结果一起交给 LLM，告诉 LLM ：
 ```text
 请根据以下资料回答：
 ……
 ```
-
-这一步就是：
-
-# Generation
+这一步就是 **Generation**。
 
 ---
-
-# 五、RAG 与 Fine-tuning 的区别
+## 四、RAG 与 Fine-tuning 的区别
 
 很多人会把 RAG 和 Fine-tuning 混淆。
+**Fine-tuning** 是：
+> "把知识训练进模型"
+特点：成本高、更新慢、训练复杂。
 
----
-
-## Fine-tuning
-
-是：
-
-# “把知识训练进模型”
-
-特点：
-
-* 成本高
-* 更新慢
-* 训练复杂
-
----
-
-## RAG
-
-是：
-
-# “外挂知识库”
-
-特点：
-
-* 实时更新
-* 成本低
-* 企业最常用
-* 不需要重新训练模型
-
+**RAG** 是：
+> "外挂知识库"
+特点：实时更新、成本低、企业最常用、不需要重新训练模型。
 所以：
-
-# 现在大多数企业 AI 系统都优先使用 RAG。
+> 现在大多数企业 AI 系统都优先使用 RAG。
 
 ---
-
-# 六、RAG 的本质
+## 五、RAG 的本质
 
 RAG 本质上其实是：
 
-# “搜索系统 + LLM”
+> "搜索系统 + LLM"
 
-真正决定效果的，
-
-往往不是模型，
-
-而是：
-
-# Retrieval（检索质量）
+真正决定效果的，往往不是模型，而是：
+> **Retrieval（检索质量）**
 
 因为：
-
 ```text
 Garbage In → Garbage Out
 ```
-
-检索错了，
-
-LLM 一定回答错。
+检索错了，LLM 一定回答错。
 
 ---
-
-# 七、RAG 面临的核心挑战
+## 六、RAG 面临的核心挑战
 
 企业里真正难的是：
 
----
-
-## 1. Chunking
-
+### 1. Chunking
 怎么切文档。
 
----
-
-## 2. Retrieval Accuracy
-
+### 2. Retrieval Accuracy
 如何提高召回准确率。
 
----
+### 3. Hallucination
+即使有 RAG，模型依然可能胡说。
 
-## 3. Hallucination
+### 4. Context Window
+上下文窗口有限，不能无限塞内容。
 
-即使有 RAG，
-
-模型依然可能胡说。
-
----
-
-## 4. Context Window
-
-上下文窗口有限。
-
-不能无限塞内容。
+### 5. Latency
+RAG 会增加 embedding、检索、rerank，因此延迟会增加。
 
 ---
+## 七、企业级 RAG 常见优化
 
-## 5. Latency
+### 1. Hybrid Search
+> 关键词搜索 + 向量搜索
+结合使用，因为纯 embedding 有时不稳定。
 
-RAG 会增加：
+### 2. Re-ranking
+先召回 Top 20，再重新排序 Top 5。
 
-* embedding
-* 检索
-* rerank
+### 3. Query Rewrite
+自动改写用户问题。例如把"它怎么配置？"改写成"Spring AI pgvector 如何配置？"
 
-因此延迟会增加。
-
----
-
-# 八、企业级 RAG 常见优化
-
----
-
-## 1. Hybrid Search
-
-即：
-
-# 关键词搜索 + 向量搜索
-
-结合使用。
-
-因为纯 embedding 有时不稳定。
+### 4. Context Compression
+因为 Context Window 有限，所以需要压缩上下文。
 
 ---
+## 八、RAG 与 Agent 的关系
 
-## 2. Re-ranking
-
-先召回：
-
-```text
-Top 20
-```
-
-再重新排序：
-
-```text
-Top 5
-```
-
----
-
-## 3. Query Rewrite
-
-自动改写用户问题。
-
-例如：
-
-```text
-“它怎么配置？”
-```
-
-改写成：
-
-```text
-“Spring AI pgvector 如何配置？”
-```
-
----
-
-## 4. Context Compression
-
-因为 Context Window 有限，
-
-所以需要压缩上下文。
-
----
-
-# 九、RAG 与 Agent 的关系
-
-ChatBot：
-
+**ChatBot：**
 ```text
 用户 → LLM
 ```
 
-RAG：
-
-```text
-用户 → Retrieval → LLM
+**RAG：**
+```text → 用户 → Retrieval → LLM
 ```
 
-Agent：
-
-```text
-用户
- ↓
-Planning
- ↓
-Tool Use
- ↓
-RAG
- ↓
-Memory
- ↓
-LLM
+**Agent：**
+```text → 用户 → Planning → Tool Use → RAG → Memory → LLM
 ```
 
 所以：
+> **RAG 是 Agent 的知识系统。**
 
-# RAG 是 Agent 的知识系统。
-
----
-
-## RAG 中的两个阶段
+### RAG 中的两个阶段
 
 ```
 索引阶段（Indexing）  —  只处理知识库文档，提前一次性完成
 查询阶段（Query）     —  只处理用户提问，实时完成，不存储
 ```
 
-| | 知识库文档 | 用户提问 |
-|---|---|---|
-| 时机 | 提前处理，存入 Vector DB | 实时处理，不存储 |
-| 目的 | 检索的来源 | 检索的种子 |
-| 是否存入 Vector DB | ✅ 是 | ❌ 否 |
+|                | 知识库文档             | 用户提问     |
+| -------------- | ----------------- | -------- |
+| 时机             | 提前处理，存入 Vector DB | 实时处理，不存储 |
+| 目的             | 检索的来源             | 检索的种子    |
+| 是否存入 Vector DB | ✅ 是               | ❌ 否      |
 
-**用户的提问也会经过 Embedding（向量化），但只是为了在向量库中搜索相似内容，不会把问题本身存进去。** 存入的是"答案的内容来源"，不是"问题本身"。
+**用户的提问也会经过 Embedding（向量化），但只是为了在向量库中搜索相似内容。** 
 
----
+## 九、RAG 与 Memory 的区别
 
-## Memory — Agent 的记忆系统
-
-Memory（记忆）和 RAG（检索）的区别：
-
+### Memory — Agent 的记忆系统
 ```
-RAG   — 从外部知识库检索（例如企业文档、产品手册）
+RAG    — 从外部知识库检索（例如企业文档、产品手册）
 Memory — 从对话历史中检索（例如之前聊过的内容）
 ```
 
-**Memory 的原理：** 把多轮对话的历史切片，向量化，存入 Vector DB。
-当 Agent 需要"记住"之前说过的话时，就从 Memory 的向量库中检索。
+**Memory 的原理：** 把多轮对话的历史切片，向量化，存入 Memery 的 Vector DB。但要注意Memery 的 Vector DB，与 RAG 的 Vector DB是分开的。
 
-例如：
+#### Hermes Agent 的 的特色就是利用了 Memory 来存储对话历史。
 
-```
-用户第 1 轮：我想买一个路由器
-用户第 2 轮：它的覆盖范围多大？
-
-Agent 会在 Memory 中检索"路由器"相关内容，
-从而知道第 2 轮是在问第 1 轮提到的产品。
-```
-
-### Hermes Agent 的 Memory 架构
-
-[nousresearch/hermes-agent](https://github.com/nousresearch/hermes-agent) 是一个开源 Agent 项目，其设计特点：
+(https://github.com/nousresearch/hermes-agent) 是一个开源 Agent 项目，其设计特点：
 
 ```
 Brief Agent Memory：
@@ -442,17 +207,12 @@ Brief Agent Memory：
 需要时再检索回来——这就是 Memory 的典型实现。
 ```
 
-所以 **Memory 确实会把对话历史存入 Vector DB**，但这是另一个独立的向量库，和存放知识库的 RAG 向量库是分开的。
-
 ---
+## 十、Java 语言中的 RAG 开发工具
 
-# 十、Java 语言中的 RAG 开发工具
+Spring AI 是 Spring 生态为 AI 应用开发打造的框架，RAG 是其核心场景之一。
 
-[Spring AI 官方](https://spring.io/projects/spring-ai) 是 Spring 生态为 AI 应用开发打造的框架，RAG 是其核心场景之一。
-
-## 核心抽象
-
-Spring AI 提供了一套与模型无关的抽象：
+### Spring AI 的核心抽象
 
 ```java
 // Embedding 模型接口
@@ -474,7 +234,7 @@ public interface Retriever<T> {
 }
 ```
 
-## 支持的向量数据库
+### 支持的向量数据库
 
 | 向量库          | 依赖                         | 说明                             |
 | ------------ | -------------------------- | ------------------------------ |
@@ -483,10 +243,9 @@ public interface Retriever<T> {
 | **Pinecone** | `spring-ai-pinecone-store` | 云服务，无需运维                       |
 | **Redis**    | `spring-ai-redis-store`    | 利用 Redis 的向量搜索能力               |
 
-## 代码示例
+### 开发代码示例
 
-### 1. 配置 Embedding 模型
-
+#### 1. 配置 Embedding 模型
 ```java
 // application.yml
 spring:
@@ -509,7 +268,7 @@ public class EmbeddingConfig {
 }
 ```
 
-### 2. 配置 VectorStore（以 pgvector 为例）
+#### 2. 配置 VectorStore（以 pgvector 为例）
 
 ```java
 @Configuration
@@ -528,7 +287,7 @@ public class VectorStoreConfig {
 }
 ```
 
-### 3. 文档切分与入库
+#### 3. 文档切分与入库
 
 ```java
 @Service
@@ -540,14 +299,13 @@ public class DocumentIngestionService {
     public void ingestDocument(String content) {
         // 切分文档
         List<Document> chunks = textSplitter.split(content);
-
         // 存入向量库（自动做 embedding）
         vectorStore.add(chunks);
     }
 }
 ```
 
-### 4. RAG 查询
+#### 4. RAG 查询
 
 ```java
 @Service
@@ -559,12 +317,10 @@ public class RagQueryService {
     public String query(String userQuestion) {
         // 1. 检索相关文档
         List<Document> docs = vectorStore.similaritySearch(userQuestion, 5);
-
         // 2. 拼接 Prompt
         String context = docs.stream()
             .map(Document::getContent)
             .collect(Collectors.joining("\n"));
-
         String prompt = """
             请根据以下资料回答问题。
 
@@ -573,14 +329,13 @@ public class RagQueryService {
 
             问题：%s
             """.formatted(context, userQuestion);
-
         // 3. 调用 LLM 生成
         return chatModel.call(prompt);
     }
 }
 ```
 
-### 5. 使用 RAG Advisor（更高级用法）
+#### 5. 使用 RAG Advisor（更高级用法）
 
 ```java
 // RAG Advisor 封装了检索 + 生成的全流程
@@ -594,40 +349,42 @@ String response = chatClient.prompt()
     .content();
 ```
 
-# 十一、Python RAG 开发工具
-
-Python 生态 RAG 开发主要有三个关键项目，关系如下：
-
-| 项目 | 定位 | 比喻 |
-|---|---|---|
-| **LangChain** | LLM 应用开发基础框架 | 汽车零部件仓库 |
-| **LangGraph** | 构建 Agent 流程图（基于 LangChain）| 组装汽车的生产线 |
-| **LlamaIndex** | 专精 RAG 的轻量框架 | 专门为 RAG 设计的汽车 |
-
-**三者的核心区别：**
-
+推荐组合：
 ```
-LangChain — 通用抽象，能做一切，但需要自己组装
-LangGraph — 在 LangChain 之上，专注于"多步骤决策流"
-LlamaIndex — 专精 RAG，API 更简洁，RAG 以外的功能较少
-```
+Spring Boot 项目：
+  spring-ai-openai + spring-ai-pgvector-store
+  → 最快上手，适合已有 Spring Boot 经验的团队
 
-**选择建议：**
-- 简单 RAG 问答 → LlamaIndex（上手快）
-- 复杂 Agent 流程（多轮对话、循环、工具调用）→ LangChain + LangGraph
-- 企业级、生产级 → LangChain/LangGraph（有完整生态）
+生产环境：
+  spring-ai-openai + spring-ai-milvus-store
+  → 分布式向量检索 + Spring 全套运维能力
+```
 
 ---
+## 十一、Python 语言中的 RAG 开发工具
 
-## LangChain + LangGraph
+Python 生态 RAG 开发有四个主流框架，各有侧重：
 
-最流行的 LLM 应用开发框架，RAG 只是其中一部分。
+| 框架             | 核心定位                      | 适用场景              |
+| -------------- | ----------------------- | ----------------- |
+| **LlamaIndex** | 专精 RAG，API 最简洁，上手最快，纯 RAG 场景首选       | 文档问答、RAG 快速原型     |
+| **LangChain**  | 通用抽象，生态最丰富，能做一切但需要自己组装            | 通用 LLM 应用、工具链集成   |
+| **LangGraph**  | 在 LangChain 之上，构建有状态、多步骤的 Agent 决策流） | 多步骤、可循环 Agent 决策流 |
+| **Haystack**   | 企业级 Pipeline 设计，内置评估与监控，适合生产环境    | 生产部署、批处理、内置评估与监控  |
 
-* `langchain` — 核心抽象（Document、VectorStore、Retriever）
-* `langchain-community` — 第三方集成（Pinecone、Chroma、FAISS...）
-* `langgraph` — 构建 Agent 流程图，支持 RAG + Planning + Memory 组合
 
-### LangChain 基本用法
+### 技术选型
+
+| 场景                         | 推荐方案                        |
+| -------------------------- | --------------------------- |
+| 文档问答 / RAG 快速原型            | **LlamaIndex**（首选）          |
+| 复杂 Agent 流程（循环、分支、工具调用）    | **LangChain + LangGraph**   |
+| 企业级生产部署 / 需要评估与监控          | **Haystack**                |
+| 已有 LangChain 项目，需增强 RAG 能力 | LangChain + LlamaIndex 混用   |
+
+### 代码示例
+
+#### 1. LangChain — 标准 RAG 流程
 
 ```python
 from langchain_community.vectorstores import Chroma
@@ -646,95 +403,39 @@ retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
 rag_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
 ```
 
-### LangGraph — 构建 Agent 决策流
+#### 2. LangGraph — Agent 决策流
 
-LangGraph 是 LangChain 的扩展，专门用于构建**有状态、多步骤、可循环**的 Agent 流程。
-
-**核心概念：**
+LangGraph 专门用于构建**有状态、多步骤、可循环**的 Agent 流程，核心概念：
 
 ```
-State — 流程中的共享数据（对话历史、检索结果、决策状态）
-Node — 流程中的一个步骤（检索、生成、判断、工具调用）
-Edge — 节点之间的连接，决定下一步去哪
+State            — 流程中的共享数据（对话历史、检索结果）
+Node             — 流程中的一个步骤（检索、生成、判断）
+Edge             — 节点之间的连接，决定下一步
 Conditional Edge — 根据状态决定走哪条分支
 ```
 
-**典型 RAG + Agent 流程：**
-
 ```python
 from langgraph.graph import StateGraph, END
-from langchain_core.messages import HumanMessage
 
-# 定义状态
-class AgentState(TypedDict):
-    messages: List[HumanMessage]
-    context: List[Document]
-    final_answer: str
-
-# 构建图
 graph = StateGraph(AgentState)
-
-# 添加节点
-graph.add_node("retrieve", lambda state: {"context": retriever.invoke(state["messages"][-1].content)})
-graph.add_node("generate", lambda state: {
-    "final_answer": rag_chain.invoke({"question": state["messages"][-1].content, "context": state["context"]})
-})
-
-# 设置入口和结束
+graph.add_node("retrieve", retrieve_fn)
+graph.add_node("generate", generate_fn)
 graph.set_entry_point("retrieve")
 graph.add_edge("retrieve", "generate")
 graph.add_edge("generate", END)
 
-# 编译并运行
 app = graph.compile()
 result = app.invoke({"messages": [HumanMessage(content="公司的年假制度是什么？")]})
 ```
 
-**LangGraph 的高级能力：**
-
-```python
-# 1. 条件分支 — 根据上一步结果决定下一步
-def should_continue(state):
-    if state.get("needs_more_info"):
-        return "clarify"
-    return "generate"
-
-graph.add_conditional_edges("generate", should_continue, {
-    "clarify": "ask_user",
-    "generate": END
-})
-
-# 2. 循环 — 没找到答案时重新检索
-graph.add_edge("generate", "retrieve")  # 再检索一次
-
-# 3. 检查点 — 支持从某个状态恢复（断点续传）
-app = graph.compile(checkpointer=MemorySaver())
-
-# 4. 多 Agent 协作
-graph.add_node("planner_agent", planner_node)
-graph.add_node("executor_agent", executor_node)
-graph.add_edge("planner_agent", "executor_agent")
-```
-
-**简单 RAG 选 LangChain，想要"能停、能循环、能判断"的 Agent 选 LangGraph。**
-
----
-
-## LlamaIndex
-
-专为 RAG 优化的框架，比 LangChain 更轻量，API 设计更直观。
-
-* `llamaindex` — 核心框架
-* 支持 40+ 向量存储连接器
-* 内置 SentenceSplitter、SemanticSplitter 多种切分策略
-* QueryPipeline 可视化编排检索流程
+#### 3. LlamaIndex — 简洁 RAG 首选
 
 ```python
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.core import Settings
 
-Settings.embed_model = "local"  # 可用本地 embedding 模型
+Settings.embed_model = "local"
 
 # 1. 加载文档
 docs = SimpleDirectoryReader("./data").load_data()
@@ -747,9 +448,7 @@ query_engine = index.as_query_engine(similarity_top_k=5)
 response = query_engine.query("公司的年假制度是什么？")
 ```
 
----
-
-## 常用向量数据库（Python 客户端）
+### 常用向量数据库（Python 客户端）
 
 | 向量库          | Python 客户端                        | 特点                     |
 | ------------ | --------------------------------- | ---------------------- |
@@ -760,13 +459,11 @@ response = query_engine.query("公司的年假制度是什么？")
 | **Qdrant**   | `qdrant-client`                   | Rust 实现，高性能，支持混合检索     |
 | **pgvector** | `psycopg2` + `pgvector` extension | PostgreSQL 扩展，现有数据库直接用 |
 
----
-
-## Embedding 模型
+### Embedding 模型
 
 ```python
-# OpenAI官方
-from langchain_openai import OpenAIEmbeddings  # 需要 API Key
+# OpenAI 官方（需要 API Key）
+from langchain_openai import OpenAIEmbeddings
 
 # 本地开源模型（无需 API Key）
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
@@ -777,9 +474,7 @@ from langchain_community.embeddings import OllamaEmbeddings
 model = OllamaEmbeddings(model="nomic-embed-text")
 ```
 
----
-
-## 快速启动推荐组合
+### 快速启动推荐组合
 
 ```
 入门：LlamaIndex + Chroma + OpenAI Embedding
@@ -788,8 +483,7 @@ model = OllamaEmbeddings(model="nomic-embed-text")
 ```
 
 ---
-
-#十二、Spring AI vs Python 生态对比
+## 十二、Spring AI vs Python 生态对比
 
 | 维度     | Spring AI                                | LangChain / LlamaIndex               |
 | ------ | ---------------------------------------- | ------------------------------------ |
@@ -800,26 +494,13 @@ model = OllamaEmbeddings(model="nomic-embed-text")
 | 多模型支持  | 统一抽象，支持 OpenAI / Anthropic / DeepSeek 等  | 通过 LiteLLM 或各自集成                     |
 | 特点     | 类型安全，Spring 生态无缝集成                       | 社区活跃，工具链丰富                           |
 
-## 入门推荐组合
-
-```
-Spring Boot 项目：
-  spring-ai-openai + spring-ai-pgvector-store
-  → 最快上手，适合已有 Spring Boot 经验的团队
-
-生产环境：
-  spring-ai-openai + spring-ai-milvus-store
-  → 分布式向量检索 + Spring 全套运维能力
-```
-
-
 ---
 
-# 十三、总结
+## 十三、总结
 
 ```text
 RAG 本质上是：
-“搜索系统 + 大语言模型”。
+"搜索系统 + 大语言模型"。
 
 它通过在生成回答之前先检索外部知识，
 解决了 LLM 知识过时、无法访问私有数据以及幻觉的问题。

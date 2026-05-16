@@ -15,7 +15,7 @@
 ---
 
 > Describe your circuit in natural language — AI analyzes requirements through multi-turn dialogue, automatically selects components, generates a .kicad_sch formatted schematic text file, then validates it via kicad-cli. The final schematic is previewed directly in the browser and can also be opened in the KiCad software.
-For more on KiCad, the most popular open-source EDA (Electronic Design Automation) software, see https://www.kicad.org/.
+> For more on KiCad, the most popular open-source EDA (Electronic Design Automation) software, see https://www.kicad.org/.
 
 </div>
 
@@ -24,13 +24,13 @@ For more on KiCad, the most popular open-source EDA (Electronic Design Automatio
 Feasibility Assessment
 Bottom line up front: Yes — with boundaries.
 
-Dimension	Verdict	Detail
-Requirements clarification	✅ Fully feasible	LLM's strongest use case
-Component selection	✅ Feasible	LLM has deep circuit knowledge
-Generating KiCad schematic files	✅ Feasible	.kicad_sch is plain-text S-expression — directly programmable
-Auto PCB layout & routing	⚠️ Partially feasible	KiCad has Python API, but auto-layout quality is limited; complex boards need human review
-Circuit correctness validation	✅ Feasible	KiCad CLI runs ERC/DRC headlessly and returns reports for agent feedback
-Fully commercial-grade, no human review	❌ Not yet realistic	Complex analog, high-speed signals, and EMC design still require an engineer's eye
+Dimension    Verdict    Detail
+Requirements clarification    ✅ Fully feasible    LLM's strongest use case
+Component selection    ✅ Feasible    LLM has deep circuit knowledge
+Generating KiCad schematic files    ✅ Feasible    .kicad_sch is plain-text S-expression — directly programmable
+Auto PCB layout & routing    ⚠️ Partially feasible    KiCad has Python API, but auto-layout quality is limited; complex boards need human review
+Circuit correctness validation    ✅ Feasible    KiCad CLI runs ERC/DRC headlessly and returns reports for agent feedback
+Fully commercial-grade, no human review    ❌ Not yet realistic    Complex analog, high-speed signals, and EMC design still require an engineer's eye
 The core breakthrough is KiCad's file format. .kicad_sch is plain-text S-expression — highly structured and directly learnable and generatable by LLMs. This is the technical foundation that makes the entire agent feasible. KiCad 7/8's .kicad_sch format is structured S-expression text that LLMs can directly generate and modify; KiCad has a built-in Python scripting API (pcbnew) for programmatic PCB operations; and KiCad CLI supports headless ERC/DRC execution with machine-readable output.
 
 ---
@@ -60,6 +60,7 @@ Every agent calls a LLM you configure — OpenAI, Anthropic, DeepSeek, Qwen, and
 ![EDA-AI-Agent-architecture](./EDA-AI-Agent-architecture.png)
 
 ## Running_result
+
 ![Running_result](./Running_result.png)
 
 ---
@@ -159,6 +160,7 @@ Two log streams from the backend:
 **Application logs (custom structured output)**
 
 After starting the backend, you'll see real-time entries for:
+
 - WebSocket connect / disconnect
 - Each pipeline stage entry and completion
 - LLM call counts, ERC results, correction attempts
@@ -185,12 +187,12 @@ tail -f backend.log
 
 Open the app in the browser, click **⚙ Settings** in the top-right corner:
 
-| Field | Description |
-|---|---|
-| **Model** | Pick from the dropdown list, or type any LiteLLM-format model name |
-| **API Key** | Your model's API key (e.g., from the DeepSeek platform) |
-| **Base URL** | Only needed for Ollama or custom endpoints, e.g. `http://localhost:11434` |
-| **KiCad CLI Path** | Leave empty for auto-detect; if not found ERC is skipped automatically |
+| Field              | Description                                                               |
+| ------------------ | ------------------------------------------------------------------------- |
+| **Model**          | Pick from the dropdown list, or type any LiteLLM-format model name        |
+| **API Key**        | Your model's API key (e.g., from the DeepSeek platform)                   |
+| **Base URL**       | Only needed for Ollama or custom endpoints, e.g. `http://localhost:11434` |
+| **KiCad CLI Path** | Leave empty for auto-detect; if not found ERC is skipped automatically    |
 
 Click **Save Settings**.
 

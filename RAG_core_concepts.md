@@ -1,37 +1,27 @@
-# 突破大语言模型局限：RAG技术的核心流程与关键概念解读
+# 突破大语言模型局限：RAG技术的核心流程与代码示例
 
 ## 一、什么是 RAG
-
 如果 AI Model 是发动机，那么 AI Agent 就是自动驾驶汽车，而 RAG 就是行车时的参考地图。
-
 RAG：Retrieval-Augmented Generation（检索-增强 生成）
-
 它的核心思想是：
 > "先从外部知识库检索相关内容，再让 LLM 基于这些内容生成回答。"
-也就是说：
-```text
-RAG = 检索（Retrieval） + 生成（Generation）
-```
 
 ---
 ## 二、为什么需要 RAG
-
 因为大语言模型本身有几个问题：
 1. 容易产生幻觉（Hallucination）；
 2. 不知道企业私有数据；
 3. 知识有截止日期；
 4. 无法实时更新知识。
-
 例如：
 ```text
 "在公司如何申请年假？"
 ```
 普通 GPT 不可能知道，因为这些数据没有训练进模型。所以：
-> RAG 的目标就是让模型能够"临时查资料"，而不是把所有知识都训练进模型。
+> RAG 的目标就是让模型能够回答问题时“开卷考试”，而不是把所有知识都训练进模型。
 
 ---
 ## 三、RAG 开发的核心流程细节
-
 概括：
 ```text
 1. 文档切片（Chunking）
@@ -58,7 +48,6 @@ RAG = 检索（Retrieval） + 生成（Generation）
 ### 2. Embedding（向量化）
 Embedding 的本质是：
 > "把文本转换成向量"
-
 例如：
 ```text
 "猫"
@@ -86,11 +75,11 @@ Embedding 之后，需要把向量存起来。常见向量数据库包括：pgve
 
 ---
 ## 四、RAG 与 Fine-tuning 的区别
-
-很多人会把 RAG 和 Fine-tuning 混淆。
+很多人会把 RAG 和 Fine-tuning（微调） 混淆。
 **Fine-tuning** 是：
 > "把知识训练进模型"
 特点：成本高、更新慢、训练复杂。
+注意：调用大模型时，传的参数 temperature、max_new_tokens知识在做控制，不属于Fine-tuning。
 
 **RAG** 是：
 > "外挂知识库"
@@ -100,9 +89,7 @@ Embedding 之后，需要把向量存起来。常见向量数据库包括：pgve
 
 ---
 ## 五、RAG 的本质
-
 RAG 本质上其实是：
-
 > "搜索系统 + LLM"
 
 真正决定效果的，往往不是模型，而是：
@@ -116,7 +103,6 @@ Garbage In → Garbage Out
 
 ---
 ## 六、RAG 面临的核心挑战
-
 企业里真正难的是：
 
 ### 1. Chunking
@@ -136,7 +122,6 @@ RAG 会增加 embedding、检索、rerank，因此延迟会增加。
 
 ---
 ## 七、企业级 RAG 常见优化
-
 ### 1. Hybrid Search
 > 关键词搜索 + 向量搜索
 结合使用，因为纯 embedding 有时不稳定。
@@ -152,18 +137,19 @@ RAG 会增加 embedding、检索、rerank，因此延迟会增加。
 
 ---
 ## 八、RAG 与 Agent 的关系
-
 **ChatBot：**
 ```text
 用户 → LLM
 ```
 
 **RAG：**
-```text → 用户 → Retrieval → LLM
+```text
+用户 → Retrieval → LLM
 ```
 
 **Agent：**
-```text → 用户 → Planning → Tool Use → RAG → Memory → LLM
+```text
+用户 → Planning → Tool Use → RAG → Memory → LLM
 ```
 
 所以：
@@ -185,7 +171,6 @@ RAG 会增加 embedding、检索、rerank，因此延迟会增加。
 **用户的提问也会经过 Embedding（向量化），但只是为了在向量库中搜索相似内容。** 
 
 ## 九、RAG 与 Memory 的区别
-
 ### Memory — Agent 的记忆系统
 ```
 RAG    — 从外部知识库检索（例如企业文档、产品手册）
@@ -209,7 +194,6 @@ Brief Agent Memory：
 
 ---
 ## 十、Java 语言中的 RAG 开发工具
-
 Spring AI 是 Spring 生态为 AI 应用开发打造的框架，RAG 是其核心场景之一。
 
 ### Spring AI 的核心抽象
@@ -362,9 +346,7 @@ Spring Boot 项目：
 
 ---
 ## 十一、Python 语言中的 RAG 开发工具
-
 Python 生态 RAG 开发有四个主流框架，各有侧重：
-
 | 框架             | 核心定位                      | 适用场景              |
 | -------------- | ----------------------- | ----------------- |
 | **LlamaIndex** | 专精 RAG，API 最简洁，上手最快，纯 RAG 场景首选       | 文档问答、RAG 快速原型     |
@@ -374,7 +356,6 @@ Python 生态 RAG 开发有四个主流框架，各有侧重：
 
 
 ### 技术选型
-
 | 场景                         | 推荐方案                        |
 | -------------------------- | --------------------------- |
 | 文档问答 / RAG 快速原型            | **LlamaIndex**（首选）          |
@@ -383,9 +364,7 @@ Python 生态 RAG 开发有四个主流框架，各有侧重：
 | 已有 LangChain 项目，需增强 RAG 能力 | LangChain + LlamaIndex 混用   |
 
 ### 代码示例
-
 #### 1. LangChain — 标准 RAG 流程
-
 ```python
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
@@ -404,9 +383,7 @@ rag_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
 ```
 
 #### 2. LangGraph — Agent 决策流
-
 LangGraph 专门用于构建**有状态、多步骤、可循环**的 Agent 流程，核心概念：
-
 ```
 State            — 流程中的共享数据（对话历史、检索结果）
 Node             — 流程中的一个步骤（检索、生成、判断）
@@ -429,7 +406,6 @@ result = app.invoke({"messages": [HumanMessage(content="公司的年假制度是
 ```
 
 #### 3. LlamaIndex — 简洁 RAG 首选
-
 ```python
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.vector_stores.chroma import ChromaVectorStore
@@ -449,7 +425,6 @@ response = query_engine.query("公司的年假制度是什么？")
 ```
 
 ### 常用向量数据库（Python 客户端）
-
 | 向量库          | Python 客户端                        | 特点                     |
 | ------------ | --------------------------------- | ---------------------- |
 | **Chroma**   | `chromadb`                        | 轻量，本地优先，最适合 RAG 入门     |
@@ -460,7 +435,6 @@ response = query_engine.query("公司的年假制度是什么？")
 | **pgvector** | `psycopg2` + `pgvector` extension | PostgreSQL 扩展，现有数据库直接用 |
 
 ### Embedding 模型
-
 ```python
 # OpenAI 官方（需要 API Key）
 from langchain_openai import OpenAIEmbeddings
@@ -475,7 +449,6 @@ model = OllamaEmbeddings(model="nomic-embed-text")
 ```
 
 ### 快速启动推荐组合
-
 ```
 入门：LlamaIndex + Chroma + OpenAI Embedding
 生产：LangChain/LlamaIndex + Milvus/Pinecone + BGE embedding
@@ -484,7 +457,6 @@ model = OllamaEmbeddings(model="nomic-embed-text")
 
 ---
 ## 十二、Spring AI vs Python 生态对比
-
 | 维度     | Spring AI                                | LangChain / LlamaIndex               |
 | ------ | ---------------------------------------- | ------------------------------------ |
 | 语言     | Java / Kotlin                            | Python                               |
@@ -495,9 +467,7 @@ model = OllamaEmbeddings(model="nomic-embed-text")
 | 特点     | 类型安全，Spring 生态无缝集成                       | 社区活跃，工具链丰富                           |
 
 ---
-
 ## 十三、总结
-
 ```text
 RAG 本质上是：
 "搜索系统 + 大语言模型"。

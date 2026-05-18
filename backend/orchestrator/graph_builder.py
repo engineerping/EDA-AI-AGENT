@@ -1,6 +1,10 @@
 from langgraph.graph import StateGraph, END, START
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.prebuilt import ToolNode
+
 from backend.orchestrator.langgraph_state import AgentState
+from backend.mcp.tools.compdb import compdb_search, compdb_add
+
 
 def route_after_validation(state: AgentState) -> str:
     error_count = state.get("erc_report", {}).get("error_count", -1)
@@ -12,7 +16,9 @@ def route_after_validation(state: AgentState) -> str:
 def build_orchestrator_graph():
     builder = StateGraph(AgentState)
     builder.add_node("req_agent", lambda s: s)
-    builder.add_node("design_agent", lambda s: s)
+    # design_agent uses MCP compdb tools via ToolNode
+    design_tools = [compdb_search, compdb_add]
+    builder.add_node("design_agent", ToolNode(design_tools))
     builder.add_node("gen_agent", lambda s: s)
     builder.add_node("validation_agent", lambda s: s)
     builder.add_edge(START, "req_agent")

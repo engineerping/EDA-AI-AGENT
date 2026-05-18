@@ -1,7 +1,6 @@
 from __future__ import annotations
 import json
 from backend.agents.base import BaseAgent
-from backend.orchestrator import Session
 from backend.tools.component_db import search_components as _search_components, get_component_details as _get_component_details
 
 
@@ -18,7 +17,7 @@ Rules:
 - When the spec mentions a correction loop (ERC errors), fix only the flagged components.
 - Call finalize_bom when the BOM is complete."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session) -> None:
         super().__init__()
         self._session = session
 

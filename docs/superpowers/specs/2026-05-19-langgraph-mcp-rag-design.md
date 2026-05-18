@@ -8,60 +8,258 @@
 
 ## 一、架构总览
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                                    User (Chat)                                      │
-│                         "我要一个 STM32F4 的机器人主控板"                              │
-└─────────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        ▼
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                         Orchestrator StateGraph (LangGraph)                         │
-│   ┌─────────────────────────────────────────────────────────────────────────────┐  │
-│   │  ReAct Loop:  Thought → Action → Observation → 循环直到 ERC 通过                 │  │
-│   │  State: {stage, requirements, bom, schematic_content, erc_errors, budget}     │  │
-│   │  MemorySaver checkpointer — 跨迭代持久化状态                                    │  │
-│   └─────────────────────────────────────────────────────────────────────────────┘  │
-│                                                                                     │
-│   路由决策：                                                                       │
-│     requirements stage  → Req Agent                                                 │
-│     design stage        → Design Agent (+ RAG 查询)                                │
-│     generation stage   → KiCad Gen Agent                                           │
-│     validation stage   → Validation Agent                                          │
-│     ERC 有错误         → 回到 design stage（最多 3 次修正）                            │
-└──────────────────┬──────────────────────────────────────────┬──────────────────────┘
-                   │                                          │
-          ┌────────▼────────┐        ┌────────▼────────┐      ┌────────▼────────┐
-          │   Req Agent     │        │  Design Agent   │      │  Validation     │
-          │  (StateGraph)   │        │  (StateGraph)   │      │  Agent          │
-          │  MemorySaver    │        │  MemorySaver    │      │  (StateGraph)   │
-          │  + MCP Client   │        │  + MCP Client   │      │  + MCP Client   │
-          └────────┬────────┘        └────────┬────────┘      └────────┬────────┘
-                   │                          │                          │
-          ┌────────▼──────────────────────────▼──────────────────────────▼────────┐
-          │                     MCP Server (stdio 子进程)                          │
-          │  ─────────────────────────────────────────────────────────────────── │
-          │  工具清单：                                                             │
-          │    compdb_search(query)  → pgvector 相似度检索                          │
-          │    compdb_add(data)       → 写入 PostgreSQL + 生成 embedding                │
-          │    kicad_erc(sch_path)   → KiCad CLI ERC 检查                          │
-          │    kicad_generate_sch(bom) → 生成 .kicad_sch 文本                       │
-          │    file_write(path, content)                                          │
-          │    file_read(path)                                                     │
-          └─────────────────────────────────┬────────────────────────────────────┘
-                                            │
-                    ┌───────────────────────┼───────────────────────┐
-                    │                       │                       │
-          ┌─────────▼─────────┐   ┌─────────▼─────────┐   ┌────────▼────────┐
-          │  PostgreSQL +     │   │    KiCad CLI     │   │   文件系统       │
-          │  pgvector (RDS)  │   │  (ERC / DRC)     │   │   (.kicad_sch)  │
-          │  ─────────────── │   │                  │   │                 │
-          │  components 表   │   │  kicad-cli sch   │   │   输出目录        │
-          │  component_      │   │    erc           │   │                 │
-          │    embeddings 表 │   │                  │   │                 │
-          │  (pgvector 向量) │   │                  │   │                 │
-          └───────────────────┘   └───────────────────┘   └─────────────────┘
-```
+<html>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --c-gray:#e8e8e8;
+  --c-purple:#ede7f6;
+  --c-teal:#e0f2f1;
+  --c-amber:#fff3e0;
+  --c-green:#e8f5e9;
+  --c-red:#ffebee;
+  --t:#546e7a;
+  --b:#37474f;
+}
+body{font-family:system-ui,-apple-system,sans-serif;background:#fafafa;padding:20px}
+.diagram{padding:20px;max-width:900px;margin:0 auto}
+.info-box{background:white;border:1px solid #e0e0e0;border-radius:8px;padding:16px 20px;margin-top:16px}
+.info-title{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:8px}
+.info-body{font-size:12px;color:#666;line-height:1.6}
+.tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;margin:4px 4px 0 0;background:#f5f5f5;color:#888;font-weight:500}
+.th{fill:#1a1a1a;font-size:13px;font-weight:600}
+.ts{fill:#555;font-size:10px}
+.th-sm{fill:#1a1a1a;font-size:11px;font-weight:600}
+.ts-sm{fill:#666;font-size:9px}
+.c-gray rect,.c-gray{fill:var(--c-gray);stroke:#bdbdbd}
+.c-purple rect,.c-purple{fill:var(--c-purple);stroke:#9575cd}
+.c-teal rect,.c-teal{fill:var(--c-teal);stroke:#4db6ac}
+.c-amber rect,.c-amber{fill:var(--c-amber);stroke:#ffb74d}
+.c-green rect,.c-green{fill:var(--c-green);stroke:#a5d6a7}
+.c-red rect,.c-red{fill:var(--c-red);stroke:#ef9a9a}
+.node{stroke-width:0.5;cursor:pointer}
+.hint{font-size:11px;color:#999;text-align:center;margin-bottom:12px}
+.c-label{font-size:9px;fill:#888}
+</style>
+
+<p class="hint">点击任意组件查看详情</p>
+
+<svg width="100%" viewBox="0 0 900 580" role="img">
+<title>EDA-AI-Agent LangGraph + MCP + RAG 架构图</title>
+<defs>
+  <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+  <marker id="ar2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="#ef9a9a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<!-- User -->
+
+<g class="node c-gray" onclick="show('user')">
+  <rect x="320" y="20" width="260" height="48" rx="8"/>
+  <text class="th" x="450" y="42" text-anchor="middle">User (Chat)</text>
+  <text class="ts" x="450" y="58" text-anchor="middle">"我要一个 STM32F4 机器人主控板"</text>
+</g>
+
+<!-- Arrow User→Orch -->
+
+<line x1="450" y1="68" x2="450" y2="92" stroke="var(--t)" stroke-width="1" marker-end="url(#ar)"/>
+
+<!-- Orchestrator -->
+
+<g class="node c-purple" onclick="show('orch')">
+  <rect x="60" y="95" width="780" height="70" rx="8"/>
+  <text class="th" x="450" y="115" text-anchor="middle">Orchestrator StateGraph (LangGraph)</text>
+  <text class="ts" x="450" y="132" text-anchor="middle">ReAct Loop: Thought → Action → Observation → 循环直到 ERC 通过</text>
+  <text class="ts" x="450" y="148" text-anchor="middle">State: {stage, requirements, bom, schematic_content, erc_errors, budget} · MemorySaver checkpointer</text>
+</g>
+
+<!-- Fan arrows Orch→4 Agents -->
+
+<line x1="450" y1="165" x2="150" y2="198" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="450" y1="165" x2="340" y2="198" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="450" y1="165" x2="530" y2="198" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="450" y1="165" x2="720" y2="198" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+
+<!-- 4 Sub-agents -->
+
+<g class="node c-teal" onclick="show('req')">
+  <rect x="75" y="200" width="150" height="60" rx="8"/>
+  <text class="th-sm" x="150" y="220" text-anchor="middle">Req Agent</text>
+  <text class="ts-sm" x="150" y="236" text-anchor="middle">StateGraph + MemorySaver</text>
+  <text class="ts-sm" x="150" y="250" text-anchor="middle">+ MCP Client</text>
+</g>
+
+<g class="node c-teal" onclick="show('design')">
+  <rect x="265" y="200" width="150" height="60" rx="8"/>
+  <text class="th-sm" x="340" y="220" text-anchor="middle">Design Agent</text>
+  <text class="ts-sm" x="340" y="236" text-anchor="middle">StateGraph + MemorySaver</text>
+  <text class="ts-sm" x="340" y="250" text-anchor="middle">+ MCP Client + RAG</text>
+</g>
+
+<g class="node c-teal" onclick="show('gen')">
+  <rect x="455" y="200" width="150" height="60" rx="8"/>
+  <text class="th-sm" x="530" y="220" text-anchor="middle">KiCad Gen Agent</text>
+  <text class="ts-sm" x="530" y="236" text-anchor="middle">StateGraph + MemorySaver</text>
+  <text class="ts-sm" x="530" y="250" text-anchor="middle">+ MCP Client</text>
+</g>
+
+<g class="node c-teal" onclick="show('valid')">
+  <rect x="645" y="200" width="150" height="60" rx="8"/>
+  <text class="th-sm" x="720" y="220" text-anchor="middle">Validation Agent</text>
+  <text class="ts-sm" x="720" y="236" text-anchor="middle">StateGraph + MemorySaver</text>
+  <text class="ts-sm" x="720" y="250" text-anchor="middle">+ MCP Client</text>
+</g>
+
+<!-- Arrows agents→MCP Server -->
+
+<line x1="150" y1="260" x2="280" y2="310" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="340" y1="260" x2="340" y2="310" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="530" y1="260" x2="400" y2="310" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="720" y1="260" x2="560" y2="310" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+
+<!-- MCP Server -->
+
+<g class="node c-amber" onclick="show('mcp')">
+  <rect x="180" y="315" width="540" height="95" rx="8"/>
+  <text class="th" x="450" y="338" text-anchor="middle">MCP Server (stdio 子进程)</text>
+  <line x1="200" y1="350" x2="700" y2="350" stroke="#e0e0e0" stroke-width="0.5"/>
+  <text class="ts-sm" x="215" y="368">工具清单：</text>
+  <text class="ts-sm" x="215" y="383">compdb_search(query) → pgvector 相似度检索</text>
+  <text class="ts-sm" x="215" y="396">compdb_add(data) → 写入 PostgreSQL + 生成 embedding</text>
+  <text class="ts-sm" x="215" y="409">kicad_erc(sch_path) → KiCad CLI ERC 检查</text>
+  <text class="ts-sm" x="450" y="383">kicad_generate_sch(bom) → 生成 .kicad_sch 文本</text>
+  <text class="ts-sm" x="450" y="396">file_write(path, content)</text>
+  <text class="ts-sm" x="450" y="409">file_read(path)</text>
+</g>
+
+<!-- Arrows MCP→3 bottom boxes -->
+
+<line x1="280" y1="410" x2="160" y2="450" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="400" y1="410" x2="390" y2="450" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="560" y1="410" x2="620" y2="450" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+
+<!-- 3 bottom layers -->
+
+<g class="node c-green" onclick="show('postgres')">
+  <rect x="60" y="455" width="200" height="90" rx="8"/>
+  <text class="th-sm" x="160" y="475" text-anchor="middle">PostgreSQL + pgvector (RDS)</text>
+  <line x1="75" y1="488" x2="245" y2="488" stroke="#e0e0e0" stroke-width="0.5"/>
+  <text class="ts-sm" x="80" y="502">components 表</text>
+  <text class="ts-sm" x="80" y="515">component_embeddings 表</text>
+  <text class="ts-sm" x="80" y="528">(pgvector 向量 1536维)</text>
+  <text class="ts-sm" x="80" y="541">CREATE EXTENSION pgvector</text>
+</g>
+
+<g class="node c-amber" onclick="show('kicadcli')">
+  <rect x="290" y="455" width="200" height="90" rx="8"/>
+  <text class="th-sm" x="390" y="475" text-anchor="middle">KiCad CLI (ERC / DRC)</text>
+  <line x1="305" y1="488" x2="475" y2="488" stroke="#e0e0e0" stroke-width="0.5"/>
+  <text class="ts-sm" x="310" y="502">kicad-cli sch erc</text>
+  <text class="ts-sm" x="310" y="515">kicad-cli pcb drc</text>
+  <text class="ts-sm" x="310" y="528">headless 模式</text>
+  <text class="ts-sm" x="310" y="541">输出 XML 报告</text>
+</g>
+
+<g class="node c-gray" onclick="show('filesystem')">
+  <rect x="520" y="455" width="200" height="90" rx="8"/>
+  <text class="th-sm" x="620" y="475" text-anchor="middle">文件系统</text>
+  <line x1="535" y1="488" x2="705" y2="488" stroke="#e0e0e0" stroke-width="0.5"/>
+  <text class="ts-sm" x="540" y="502">.kicad_sch (S-expression)</text>
+  <text class="ts-sm" x="540" y="515">BOM CSV</text>
+  <text class="ts-sm" x="540" y="528">ERC Report</text>
+  <text class="ts-sm" x="540" y="541">输出目录</text>
+</g>
+
+<!-- Feedback loop: Validation → back to Design (ERC errors) -->
+
+<path d="M795 240 L830 240 L830 395 L795 395" fill="none" stroke="#ef9a9a" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ar2)"/>
+<text class="ts-sm" x="800" y="318" fill="#ef9a9a">ERC 错误</text>
+<text class="ts-sm" x="800" y="332" fill="#ef9a9a">回退修正</text>
+<text class="ts-sm" x="800" y="346" fill="#ef9a9a">(最多 3 次)</text>
+
+<!-- Memory store label -->
+
+<rect x="65" y="295" width="80" height="22" rx="5" fill="none" stroke="var(--b)" stroke-width="0.5" stroke-dasharray="3 2" opacity="0.5"/>
+<text class="ts-sm" x="105" y="310" text-anchor="middle" opacity="0.7">MemoryStore</text>
+
+<!-- RAG label -->
+
+<rect x="285" y="295" width="110" height="22" rx="5" fill="none" stroke="#4db6ac" stroke-width="0.8" opacity="0.7"/>
+<text class="ts-sm" x="340" y="310" text-anchor="middle" fill="#4db6ac">RAG 检索</text>
+
+</svg>
+
+<div class="info-box" id="info-box">
+  <div class="info-title">EDA-AI-Agent — LangGraph + MCP + RAG 架构</div>
+  <div class="info-body">六层架构：用户对话 → Orchestrator (LangGraph StateGraph) → 四个专用子智能体 → MCP Server → 三个后端（PostgreSQL/pgvector 存储、KiCad CLI 执行 ERC、文件系统输出）。ERC 错误时触发反馈循环（最多修正 3 次）。点击任意组件查看实现细节。</div>
+</div>
+
+<script>
+const D = {
+  user:{
+    t:'User (Chat) — 用户对话层',
+    b:'用户以自然语言描述电路需求（例："我需要一个机器人主控板，STM32F4，带 4 路电机驱动、IMU 接口、USB 通信"）。Agent 会主动追问遗漏的约束：工作电压范围、最大电流、封装偏好（SMD/THT）、是否贴片打样（嘉立创）、预算上限。',
+    tags:['Multi-turn Dialog','Structured Output']
+  },
+  orch:{
+    t:'Orchestrator StateGraph — LangGraph 主循环',
+    b:'核心 ReAct 循环：接收需求 → Thought（判断下一步）→ Action（调用子 agent）→ Observation（收集结果）→ 循环直到 ERC 通过。\n① 维护全局设计状态（需求文档 + BOM 草稿 + 当前方案版本）\n② 路由到正确的子 agent\n③ 管理 iteration budget（最多 20 轮，防无限循环）\n④ ERC 错误时触发修复循环（最多 3 次修正）\n⑤ MemorySaver checkpointer 跨迭代持久化状态。',
+    tags:['LangGraph','ReAct','StateGraph','MemorySaver','Iteration Budget']
+  },
+  req:{
+    t:'Req Agent — 需求拆解',
+    b:'系统性地将模糊需求转换为结构化规格。内部有独立 StateGraph + MemorySaver，支持 ReAct 内部循环。输出 JSON 格式需求文档，未确认项标注 TBD。',
+    tags:['StateGraph','MemorySaver','ReAct','JSON Schema']
+  },
+  design:{
+    t:'Design Agent — 电路设计与选型（RAG）',
+    b:'根据需求文档选择最优电路拓扑。从 PostgreSQL + pgvector 检索元器件（RAG），生成完整 BOM 并标注选型理由。内部 StateGraph 支持 think/action/observe 循环，MemorySaver 持久化中间状态。',
+    tags:['RAG','pgvector','StateGraph','MemorySaver','BOM Generation']
+  },
+  gen:{
+    t:'KiCad Gen Agent — 原理图生成',
+    b:'将 BOM + 连接关系转换为 KiCad .kicad_sch 文件（S-expression 格式）。通过 MCP 调用 kicad_generate_sch 工具，写入文件系统。内部 StateGraph 管理生成状态。',
+    tags:['S-expression','.kicad_sch','MCP','StateGraph']
+  },
+  valid:{
+    t:'Validation Agent — ERC/DRC 验证',
+    b:'调用 KiCad CLI 在 headless 模式运行 ERC。解析 XML 报告，将错误翻译为中文并给出修复方案。错误时通过反馈循环回到 Design Agent 重新修正（最多 3 次）。',
+    tags:['ERC','KiCad CLI','XML','Feedback Loop','StateGraph']
+  },
+  mcp:{
+    t:'MCP Server — 工具协议层（stdio 子进程）',
+    b:'MCP (Model Context Protocol) 是 Anthropic 提出的工具调用标准协议。EDA-AI-Agent 中 MCP Server 以子进程运行，通过 stdio 与 LangGraph 通信。\n\n工具清单：\n• compdb_search — RAG 检索元件（PostgreSQL + pgvector）\n• compdb_add — 添加元件到数据库\n• kicad_erc — 调用 KiCad CLI 执行 ERC\n• kicad_generate_sch — 生成 .kicad_sch 文件\n• file_write / file_read — 文件操作',
+    tags:['MCP','stdio','Model Context Protocol','Tool Protocol']
+  },
+  postgres:{
+    t:'PostgreSQL + pgvector — 元件知识库',
+    b:'存储元器件的结构化数据 + 向量嵌入。\n\n表结构：\n• components — 元件基础信息（型号/封装/价格/JLC编号）\n• component_embeddings — description 向量（text-embedding-3-small, 1536维）\n\nRAG 流程：用户 query → Embedding → pgvector 余弦相似度检索 → Top-K → 注入 prompt\n\n启用方式：在 RDS PostgreSQL 上执行 CREATE EXTENSION pgvector;',
+    tags:['pgvector','RDS PostgreSQL','RAG','text-embedding','Cosine Similarity']
+  },
+  kicadcli:{
+    t:'KiCad CLI — 无头模式自动化',
+    b:'KiCad 7+ 提供完整 CLI，支持无 GUI 运行。\n• kicad-cli sch erc — ERC 检查，输出 XML 报告\n• kicad-cli pcb drc — PCB DRC 检查\n• kicad-cli sch export --format pdf — 导出 PDF\n\nEDA-AI-Agent 通过 subprocess 调用，捕获 stdout/stderr，解析 XML 错误列表。',
+    tags:['KiCad CLI 7+','subprocess','ERC','DRC','headless']
+  },
+  filesystem:{
+    t:'文件系统 — 输出层',
+    b'EDA-AI-Agent 输出的文件：\n• .kicad_sch — KiCad 原理图（S-expression 文本，可 Git 版本控制）\n• BOM CSV — 物料清单（可直接用于嘉立创下单）\n• ERC Report — 错误列表与修复指南',
+    tags:['S-expression','KiCad 7/8','Git-friendly','BOM CSV']
+  }
+};
+
+function show(key){
+  const d=D[key];
+  if(!d) return;
+  const tags=d.tags.map(t=>`<span class="tag">${t}</span>`).join('');
+  document.getElementById('info-box').innerHTML=`<div class="info-title">${d.t}</div><div class="info-body" style="white-space:pre-line">${d.b}</div><div>${tags}</div>`;
+}
+</script>
+
+</html>
 
 ---
 

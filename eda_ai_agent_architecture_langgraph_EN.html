@@ -1,0 +1,252 @@
+<html>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --c-gray:#e8e8e8;
+  --c-purple:#ede7f6;
+  --c-teal:#e0f2f1;
+  --c-amber:#fff3e0;
+  --c-green:#e8f5e9;
+  --c-red:#ffebee;
+  --t:#546e7a;
+  --b:#37474f;
+}
+body{font-family:system-ui,-apple-system,sans-serif;background:#fafafa;padding:20px}
+.diagram{padding:20px;max-width:900px;margin:0 auto}
+.info-box{background:white;border:1px solid #e0e0e0;border-radius:8px;padding:16px 20px;margin-top:16px}
+.info-title{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:8px}
+.info-body{font-size:12px;color:#666;line-height:1.6}
+.tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;margin:4px 4px 0 0;background:#f5f5f5;color:#888;font-weight:500}
+.th{fill:#1a1a1a;font-size:13px;font-weight:600}
+.ts{fill:#555;font-size:10px}
+.th-sm{fill:#1a1a1a;font-size:11px;font-weight:600}
+.ts-sm{fill:#666;font-size:9px}
+.c-gray rect,.c-gray{fill:var(--c-gray);stroke:#bdbdbd}
+.c-purple rect,.c-purple{fill:var(--c-purple);stroke:#9575cd}
+.c-teal rect,.c-teal{fill:var(--c-teal);stroke:#4db6ac}
+.c-amber rect,.c-amber{fill:var(--c-amber);stroke:#ffb74d}
+.c-green rect,.c-green{fill:var(--c-green);stroke:#a5d6a7}
+.c-red rect,.c-red{fill:var(--c-red);stroke:#ef9a9a}
+.node{stroke-width:0.5;cursor:pointer}
+.hint{font-size:11px;color:#999;text-align:center;margin-bottom:12px}
+.c-label{font-size:9px;fill:#888}
+</style>
+
+<p class="hint">Click any component to view details</p>
+
+<svg width="100%" viewBox="0 0 900 580" role="img">
+<title>EDA-AI-Agent LangGraph + MCP + RAG Architecture</title>
+<defs>
+  <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+  <marker id="ar2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="#ef9a9a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<!-- User -->
+
+<g class="node c-gray" onclick="show('user')">
+  <rect x="320" y="20" width="260" height="48" rx="8"/>
+  <text class="th" x="450" y="42" text-anchor="middle">User (Chat)</text>
+  <text class="ts" x="450" y="58" text-anchor="middle">"I need an STM32F4 robot controller board"</text>
+</g>
+
+<!-- Arrow User→Orch -->
+
+<line x1="450" y1="68" x2="450" y2="92" stroke="var(--t)" stroke-width="1" marker-end="url(#ar)"/>
+
+<!-- Orchestrator -->
+
+<g class="node c-purple" onclick="show('orch')">
+  <rect x="60" y="95" width="780" height="70" rx="8"/>
+  <text class="th" x="450" y="115" text-anchor="middle">Orchestrator StateGraph (LangGraph)</text>
+  <text class="ts" x="450" y="132" text-anchor="middle">ReAct Loop: Thought → Action → Observation → loop until ERC passes</text>
+  <text class="ts" x="450" y="148" text-anchor="middle">State: {stage, requirements, bom, schematic_content, erc_errors, budget} · MemorySaver checkpointer</text>
+</g>
+
+<!-- Fan arrows Orch→4 Agents -->
+
+<line x1="450" y1="165" x2="150" y2="198" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="450" y1="165" x2="340" y2="198" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="450" y1="165" x2="530" y2="198" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="450" y1="165" x2="720" y2="198" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+
+<!-- 4 Sub-agents -->
+
+<g class="node c-teal" onclick="show('req')">
+  <rect x="75" y="200" width="150" height="60" rx="8"/>
+  <text class="th-sm" x="150" y="220" text-anchor="middle">Req Agent</text>
+  <text class="ts-sm" x="150" y="236" text-anchor="middle">StateGraph + MemorySaver</text>
+  <text class="ts-sm" x="150" y="250" text-anchor="middle">+ MCP Client</text>
+</g>
+
+<g class="node c-teal" onclick="show('design')">
+  <rect x="265" y="200" width="150" height="60" rx="8"/>
+  <text class="th-sm" x="340" y="220" text-anchor="middle">Design Agent</text>
+  <text class="ts-sm" x="340" y="236" text-anchor="middle">StateGraph + MemorySaver</text>
+  <text class="ts-sm" x="340" y="250" text-anchor="middle">+ MCP Client + RAG</text>
+</g>
+
+<g class="node c-teal" onclick="show('gen')">
+  <rect x="455" y="200" width="150" height="60" rx="8"/>
+  <text class="th-sm" x="530" y="220" text-anchor="middle">KiCad Gen Agent</text>
+  <text class="ts-sm" x="530" y="236" text-anchor="middle">StateGraph + MemorySaver</text>
+  <text class="ts-sm" x="530" y="250" text-anchor="middle">+ MCP Client</text>
+</g>
+
+<g class="node c-teal" onclick="show('valid')">
+  <rect x="645" y="200" width="150" height="60" rx="8"/>
+  <text class="th-sm" x="720" y="220" text-anchor="middle">Validation Agent</text>
+  <text class="ts-sm" x="720" y="236" text-anchor="middle">StateGraph + MemorySaver</text>
+  <text class="ts-sm" x="720" y="250" text-anchor="middle">+ MCP Client</text>
+</g>
+
+<!-- Arrows agents→MCP Server -->
+
+<line x1="150" y1="260" x2="250" y2="315" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="340" y1="260" x2="380" y2="315" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="530" y1="260" x2="520" y2="315" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="720" y1="260" x2="650" y2="315" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+
+<!-- MCP Server -->
+
+<g class="node c-amber" onclick="show('mcp')">
+  <rect x="120" y="315" width="660" height="95" rx="8"/>
+  <text class="th" x="450" y="338" text-anchor="middle">MCP Server (stdio subprocess)</text>
+  <line x1="140" y1="350" x2="760" y2="350" stroke="#e0e0e0" stroke-width="0.5"/>
+  <text class="ts-sm" x="155" y="368">Tools:</text>
+  <text class="ts-sm" x="155" y="383">compdb_search(query) → pgvector similarity search</text>
+  <text class="ts-sm" x="155" y="396">compdb_add(data) → write to PostgreSQL + generate embedding</text>
+  <text class="ts-sm" x="155" y="409">kicad_erc(sch_path) → KiCad CLI ERC check</text>
+  <text class="ts-sm" x="450" y="383">kicad_generate_sch(bom) → generate .kicad_sch text</text>
+  <text class="ts-sm" x="450" y="396">file_write(path, content)</text>
+  <text class="ts-sm" x="450" y="409">file_read(path)</text>
+</g>
+
+<!-- Arrows MCP→3 bottom boxes -->
+
+<line x1="280" y1="410" x2="160" y2="450" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="450" y1="410" x2="390" y2="450" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+<line x1="560" y1="410" x2="620" y2="450" stroke="var(--t)" stroke-width="0.8" marker-end="url(#ar)"/>
+
+<!-- 3 bottom layers -->
+
+<g class="node c-green" onclick="show('postgres')">
+  <rect x="60" y="455" width="200" height="90" rx="8"/>
+  <text class="th-sm" x="160" y="475" text-anchor="middle">PostgreSQL + pgvector (RDS)</text>
+  <line x1="75" y1="488" x2="245" y2="488" stroke="#e0e0e0" stroke-width="0.5"/>
+  <text class="ts-sm" x="80" y="502">components table</text>
+  <text class="ts-sm" x="80" y="515">component_embeddings table</text>
+  <text class="ts-sm" x="80" y="528">(pgvector 1536-dim vectors)</text>
+  <text class="ts-sm" x="80" y="541">CREATE EXTENSION pgvector</text>
+</g>
+
+<g class="node c-amber" onclick="show('kicadcli')">
+  <rect x="290" y="455" width="200" height="90" rx="8"/>
+  <text class="th-sm" x="390" y="475" text-anchor="middle">KiCad CLI (ERC / DRC)</text>
+  <line x1="305" y1="488" x2="475" y2="488" stroke="#e0e0e0" stroke-width="0.5"/>
+  <text class="ts-sm" x="310" y="502">kicad-cli sch erc</text>
+  <text class="ts-sm" x="310" y="515">kicad-cli pcb drc</text>
+  <text class="ts-sm" x="310" y="528">headless mode</text>
+  <text class="ts-sm" x="310" y="541">outputs XML report</text>
+</g>
+
+<g class="node c-gray" onclick="show('filesystem')">
+  <rect x="520" y="455" width="200" height="90" rx="8"/>
+  <text class="th-sm" x="620" y="475" text-anchor="middle">File System</text>
+  <line x1="535" y1="488" x2="705" y2="488" stroke="#e0e0e0" stroke-width="0.5"/>
+  <text class="ts-sm" x="540" y="502">.kicad_sch (S-expression)</text>
+  <text class="ts-sm" x="540" y="515">BOM CSV</text>
+  <text class="ts-sm" x="540" y="528">ERC Report</text>
+  <text class="ts-sm" x="540" y="541">output directory</text>
+</g>
+
+<!-- Feedback loop: Validation → back to Design (ERC errors) -->
+
+<path d="M780 240 L830 240 L830 395 L780 395" fill="none" stroke="#ef9a9a" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ar2)"/>
+<text class="ts-sm" x="800" y="318" fill="#ef9a9a">ERC errors</text>
+<text class="ts-sm" x="800" y="332" fill="#ef9a9a">feedback loop</text>
+<text class="ts-sm" x="800" y="346" fill="#ef9a9a">(max 3 retries)</text>
+
+<!-- Memory store label -->
+
+<rect x="65" y="295" width="80" height="22" rx="5" fill="none" stroke="var(--b)" stroke-width="0.5" stroke-dasharray="3 2" opacity="0.5"/>
+<text class="ts-sm" x="105" y="310" text-anchor="middle" opacity="0.7">MemoryStore</text>
+
+<!-- RAG label -->
+
+<rect x="285" y="295" width="110" height="22" rx="5" fill="none" stroke="#4db6ac" stroke-width="0.8" opacity="0.7"/>
+<text class="ts-sm" x="340" y="310" text-anchor="middle" fill="#4db6ac">RAG retrieval</text>
+
+</svg>
+
+<div class="info-box" id="info-box">
+  <div class="info-title">EDA-AI-Agent — LangGraph + MCP + RAG Architecture</div>
+  <div class="info-body">Six-layer architecture: User chat → Orchestrator (LangGraph StateGraph) → Four specialized sub-agents → MCP Server → Three backends (PostgreSQL/pgvector storage, KiCad CLI for ERC, File system output). ERC errors trigger feedback loop (max 3 corrections). Click any component for details.</div>
+</div>
+
+<script>
+const D = {
+  user:{
+    t:'User (Chat) — User Input Layer',
+    b:'Users describe circuit requirements in natural language (example: "I need an STM32F4 robot controller board with 4 motor drivers, IMU interface, USB communication"). The agent proactively asks follow-up questions about missing constraints: operating voltage range, max current, package preference (SMD/THT), whether for JLCPCB assembly, budget limit.',
+    tags:['Multi-turn Dialog','Structured Output']
+  },
+  orch:{
+    t:'Orchestrator StateGraph — LangGraph Main Loop',
+    b:'Core ReAct loop: receive requirements → Thought (decide next step) → Action (call sub-agent) → Observation (collect results) → loop until ERC passes.\n① Maintain global design state (requirements doc + BOM draft + current solution version)\n② Route to correct sub-agent\n③ Manage iteration budget (max 20 rounds, prevent infinite loops)\n④ ERC errors trigger fix loop (max 3 corrections)\n⑤ MemorySaver checkpointer persists state across iterations.',
+    tags:['LangGraph','ReAct','StateGraph','MemorySaver','Iteration Budget']
+  },
+  req:{
+    t:'Req Agent — Requirements Elicitation',
+    b:'Systematically converts vague requirements into structured specifications. Has independent StateGraph + MemorySaver with internal ReAct support. Outputs JSON format requirements doc with TBD标注 for unconfirmed items.',
+    tags:['StateGraph','MemorySaver','ReAct','JSON Schema']
+  },
+  design:{
+    t:'Design Agent — Circuit Design & Component Selection (RAG)',
+    b:'Selects optimal circuit topology based on requirements. Retrieves components from PostgreSQL + pgvector via RAG. Generates complete BOM with selection rationale. Internal StateGraph supports think/action/observe loop with MemorySaver persisting intermediate state.',
+    tags:['RAG','pgvector','StateGraph','MemorySaver','BOM Generation']
+  },
+  gen:{
+    t:'KiCad Gen Agent — Schematic Generation',
+    b:'Converts BOM + connection relationships into KiCad .kicad_sch file (S-expression format). Calls kicad_generate_sch tool via MCP, writes to file system. Internal StateGraph manages generation state.',
+    tags:['S-expression','.kicad_sch','MCP','StateGraph']
+  },
+  valid:{
+    t:'Validation Agent — ERC/DRC Verification',
+    b:'Runs KiCad CLI in headless mode for ERC. Parses XML report, translates errors to English with fix suggestions. On error, feedback loop returns to Design Agent for correction (max 3 times).',
+    tags:['ERC','KiCad CLI','XML','Feedback Loop','StateGraph']
+  },
+  mcp:{
+    t:'MCP Server — Tool Protocol Layer (stdio subprocess)',
+    b:'MCP (Model Context Protocol) is Anthropic\'s tool calling standard protocol (2025). In EDA-AI-Agent, MCP Server runs as a subprocess communicating with LangGraph via stdio.\n\nTools:\n• compdb_search — RAG component search (PostgreSQL + pgvector)\n• compdb_add — Add component to database\n• kicad_erc — Call KiCad CLI for ERC\n• kicad_generate_sch — Generate .kicad_sch file\n• file_write / file_read — File operations',
+    tags:['MCP','stdio','Model Context Protocol','Tool Protocol']
+  },
+  postgres:{
+    t:'PostgreSQL + pgvector — Component Knowledge Base',
+    b:'Stores component structured data + vector embeddings.\n\nTables:\n• components — component basic info (model/package/price/JLC number)\n• component_embeddings — description vectors (text-embedding-3-small, 1536-dim)\n\nRAG flow: user query → Embedding → pgvector cosine similarity → Top-K → inject into prompt\n\nEnable with: CREATE EXTENSION pgvector; on RDS PostgreSQL',
+    tags:['pgvector','RDS PostgreSQL','RAG','text-embedding','Cosine Similarity']
+  },
+  kicadcli:{
+    t:'KiCad CLI — Headless Mode Automation',
+    b:'KiCad 7+ provides full CLI supporting GUI-free operation.\n• kicad-cli sch erc — ERC check, outputs XML report\n• kicad-cli pcb drc — PCB DRC check\n• kicad-cli sch export --format pdf — Export PDF\n\nEDA-AI-Agent calls via subprocess, captures stdout/stderr, parses XML error list.',
+    tags:['KiCad CLI 7+','subprocess','ERC','DRC','headless']
+  },
+  filesystem:{
+    t:'File System — Output Layer',
+    b:'EDA-AI-Agent output files:\n• .kicad_sch — KiCad schematic (S-expression text, Git-version-control friendly)\n• BOM CSV — Bill of Materials (directly usable for JLCPCB ordering)\n• ERC Report — Error list with fix guides',
+    tags:['S-expression','KiCad 7/8','Git-friendly','BOM CSV']
+  }
+};
+
+function show(key){
+  const d=D[key];
+  if(!d) return;
+  const tags=d.tags.map(t=>`<span class="tag">${t}</span>`).join('');
+  document.getElementById('info-box').innerHTML=`<div class="info-title">${d.t}</div><div class="info-body" style="white-space:pre-line">${d.b}</div><div>${tags}</div>`;
+}
+</script>
+
+</html>

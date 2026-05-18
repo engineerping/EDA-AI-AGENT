@@ -56,14 +56,8 @@ async def call_tool(name: str, args: dict) -> CallToolResult:
     result = handlers[name](**args)
     if asyncio.iscoroutine(result):
         result = await result
-    # Wrap result in CallToolResult
-    if isinstance(result, CallToolResult):
-        return result
-    if isinstance(result, str):
-        return CallToolResult(content=[TextContent(type="text", text=result)])
-    if isinstance(result, list):
-        return CallToolResult(content=[TextContent(type="text", text=str(result))])
-    return CallToolResult(content=[TextContent(type="text", text=str(result))])
+    # All tools now return CallToolResult directly
+    return result
 
 async def main():
     async with server.run_session():

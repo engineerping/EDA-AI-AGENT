@@ -302,3 +302,58 @@ KiCad ERC 的错误 XML 只告诉你"pin_type mismatch at U1 pin 14"，但不解
 技术栈：LangChain + Python + pgvector（Component DB）+ 字符串模板（生成 .kicad_sch，不需要安装 KiCad Python 环境）+ KiCad CLI（ERC 验证，仅在本地测试阶段）
 
 这个 MVP 就可以作为一个很强的面试项目了。
+
+---
+
+## 技术选型：LangGraph（AI Agent 开发框架）
+
+**结论：选择 LangGraph，而非 LangChain / LlamaIndex / Haystack。**
+
+### 四框架对比
+
+| 维度 | LangChain | LangGraph | LlamaIndex | Haystack |
+| --- | --- | --- | --- | --- |
+| 定位 | LLM 应用开发库 | **多智能体工作流编排引擎** | 知识检索 / RAG 专用 | NLP 流水线 / QA 专用 |
+| 工作流模型 | 链式（Chain） | **图状（Graph）** — 支持循环 | 索引 → 查询 | Pipeline |
+| ReAct 循环 | 支持但非原生 | **原生支持cyclic图** | 不支持 | 不支持 |
+| 多智能体编排 | 需自行实现 | **内置 Orchestrator 模式** | 不支持 | 不支持 |
+| 状态管理 | 有限 | **完整的状态传递与持久化** | 不适用 | 不适用 |
+| 学习曲线 | 陡峭（过于抽象） | 中等（图论直观） | 低（专注 RAG） | 中等 |
+
+### 选择 LangGraph 的核心理由
+
+**1. ReAct 循环是 LangGraph 的原生场景**
+
+EDA-AI-Agent 的核心是 ReAct 循环：Thought → Action → Observation → 循环。LangGraph 的 `StateGraph` 支持带环的图结构，每个节点执行后可以再次回到起点，这正是 ReAct 循环的数学抽象。LangChain 的 `Chain` 是线性链式，不适合需要回头重新执行的场景。
+
+**2. Orchestrator + Subagents 架构与 LangGraph 完美对齐**
+
+LangGraph 中，每个 `Agent` 是一个 Node，节点之间通过 `edges` 路由。Orchestrator 根据 `state` 决策路由到哪个子 Agent，子 Agent 执行完后状态返回 Orchestrator 再路由——这正是 LangGraph 的标准用法。
+
+**3. 状态管理是 LangGraph 的内置特性**
+
+ReAct 循环需要跨迭代保持：`iteration_budget`、`bom_draft`、`design_state`、`erc_errors`。LangGraph 的 `StateGraph` 自动管理状态传递，无需自行实现 Context 管理。
+
+**4. 与 LangChain 生态兼容**
+
+LangGraph 底层调用 LangChain 的 LLM 和 Tool 接口，可以直接使用 LangChain 的 `ChatOpenAI`、`Tool`装饰器、`prompt_builder`。不是重新发明轮子，而是用更合适的工具做更合适的事。
+
+### 在架构图中的位置
+
+```
+Orchestrator Agent (LangGraph StateGraph)
+    ├── Req Agent (Node)
+    ├── Design Agent (Node)
+    ├── KiCad Gen Agent (Node)
+    └── Validation Agent (Node)
+         ↓
+    Tool Layer (LangChain Tool)
+         ↓
+    Memory Store (LangGraph checkpointer)
+```
+
+### 不选其他框架的原因
+
+- **LangChain**：过于泛化，Chain 线性结构不适合循环场景，ReAct 实现需要自己管理循环逻辑
+- **LlamaIndex**：专注 RAG 和知识检索，缺少 Agent 工作流编排能力，EDA 需要的是工作流而非检索
+- **Haystack**：面向 NLP/QA 场景，原生不支持 Agent 循环和多智能体编排，学习成本高但场景不匹配

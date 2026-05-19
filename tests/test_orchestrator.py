@@ -1,6 +1,6 @@
 import asyncio, pytest
 from unittest.mock import AsyncMock, patch
-from backend.orchestrator import Session, SessionState, PipelineStage
+from backend.orchestrator.orchestrator_module import Session, SessionState, PipelineStage
 
 def test_session_state_defaults():
     state = SessionState()

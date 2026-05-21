@@ -135,10 +135,10 @@ cd ..
 ### 4. Start the backend (terminal 1)
 
 ```bash
-uvicorn backend.main:app --reload --access-log
+python3 -m uvicorn backend.main:app --port 8000
 ```
 
-Backend runs at `http://localhost:8000`. Request logs are printed to this terminal in real time.
+Backend runs at `http://localhost:8000`. Logs are printed to this terminal in real time.
 
 ### 5. Start the frontend (terminal 2)
 
@@ -166,7 +166,7 @@ After starting the backend, you'll see real-time entries for:
 - LLM call counts, ERC results, correction attempts
 - Session creation and cleanup
 
-**HTTP access logs (`--access-log` flag enabled above)**
+**HTTP access logs**
 
 ```
 127.0.0.1:12345 - "GET /api/config HTTP/1.1" 200
@@ -177,7 +177,7 @@ After starting the backend, you'll see real-time entries for:
 **Persist logs to file (for background runs)**
 
 ```bash
-nohup uvicorn backend.main:app --reload --access-log > backend.log 2>&1 &
+nohup python3 -m uvicorn backend.main:app --port 8000 > backend.log 2>&1 &
 tail -f backend.log
 ```
 
@@ -260,21 +260,40 @@ python3.12 -m pytest tests/ -v
 
 ```
 backend/
-  main.py              FastAPI app + WebSocket handler
-  orchestrator.py      Pipeline coordinator + Session management
+  main.py                      FastAPI app + WebSocket
+  orchestrator/
+    __init__.py                 Exports Orchestrator, Session
+    orchestrator_module.py      Orchestrator + Session + PipelineStage + SessionState
+    graph_builder.py            LangGraph StateGraph (under construction)
+    langgraph_state.py          AgentState TypedDict
   agents/
-    req_agent.py       Requirements analysis Agent
-    design_agent.py    Circuit design Agent
-    kicad_gen_agent.py Schematic generation Agent
-    validation_agent.py ERC validation Agent
-  tools/
-    component_db.py   SQLite FTS5 component lookup
-    kicad_cli.py      KiCad CLI wrapper
-  config.py            Config read/write (~/.eda-agent/config.json)
-
+    req_agent.py               Requirements analysis Agent
+    design_agent.py            Circuit design Agent (BOM generation)
+    kicad_gen_agent.py         KiCad schematic generation Agent
+    validation_agent.py        ERC validation Agent
+  db/
+    pg_vector_store.py          pgvector RAG (enabled when EDB_PG_URL is set)
+    sqlite_component_db.py     SQLite FTS5 component DB (default)
+  mcp/
+    tools/
+      compdb.py                MCP component tools (pgvector priority + SQLite fallback)
+      kicad_cli.py             KiCad CLI wrapper
+      fs_read.py               File read tool
+    server.py                   MCP stdio server
 frontend/
   src/
-    components/       React components
-    hooks/            useAgentSocket (WebSocket + state)
-    api/              REST API client
+    components/                React components
+    hooks/                     useAgentSocket (WebSocket + state)
+    api/                       REST API client
 ```
+
+### Enable PostgreSQL + pgvector RAG (optional)
+
+Default uses SQLite FTS5 — no extra setup needed. To enable semantic RAG:
+
+```bash
+export EDB_PG_URL="postgresql://postgres:password@localhost:5432/eda_agent"
+python3 -m uvicorn backend.main:app --port 8000
+```
+
+First backend start will auto-run `backend/db/pg_schema.sql` to create tables.

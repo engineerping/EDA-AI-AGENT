@@ -138,10 +138,10 @@ cd ..
 ### 4. 启动后端
 
 ```bash
-uvicorn backend.main:app --reload --access-log
+python3 -m uvicorn backend.main:app --port 8000
 ```
 
-后端运行在 `http://localhost:8000`，请求日志实时输出到终端。
+后端运行在 `http://localhost:8000`，日志实时输出到终端。
 
 ### 5. 启动前端（新开一个终端）
 
@@ -173,7 +173,7 @@ Ctrl+C
 #   - session 创建 / 清理
 ```
 
-**HTTP 访问日志（`--access-log` 开启后可见）**
+**HTTP 访问日志**
 
 ```
 127.0.0.1:12345 - "GET /api/config HTTP/1.1" 200
@@ -185,7 +185,7 @@ Ctrl+C
 
 ```bash
 # 将日志写入文件
-nohup uvicorn backend.main:app --reload --access-log > backend.log 2>&1 &
+nohup python3 -m uvicorn backend.main:app --port 8000 > backend.log 2>&1 &
 # 查看实时日志
 tail -f backend.log
 ```
@@ -269,21 +269,40 @@ python3.12 -m pytest tests/ -v
 
 ```
 backend/
-  main.py              FastAPI 应用 + WebSocket
-  orchestrator.py      流水线协调器 + Session 管理
+  main.py                      FastAPI 应用 + WebSocket
+  orchestrator/
+    __init__.py                 导出 Orchestrator, Session
+    orchestrator_module.py      Orchestrator + Session + PipelineStage + SessionState
+    graph_builder.py            LangGraph StateGraph（构建中）
+    langgraph_state.py          AgentState TypedDict
   agents/
-    req_agent.py       需求分析 Agent
-    design_agent.py    电路设计 Agent
-    kicad_gen_agent.py 原理图生成 Agent
-    validation_agent.py ERC 验证 Agent
-  tools/
-    component_db.py   元件库查询（SQLite FTS5）
-    kicad_cli.py      KiCad CLI 调用封装
-  config.py            配置读写（~/.eda-agent/config.json）
-
+    req_agent.py               需求分析 Agent
+    design_agent.py            电路设计 Agent（BOM 生成）
+    kicad_gen_agent.py         KiCad 原理图生成 Agent
+    validation_agent.py        ERC 验证 Agent
+  db/
+    pg_vector_store.py          pgvector RAG（EDB_PG_URL 设置时启用）
+    sqlite_component_db.py     SQLite FTS5 元件库（默认启用）
+  mcp/
+    tools/
+      compdb.py                MCP 元件库工具（pgvector 优先 + SQLite fallback）
+      kicad_cli.py             KiCad CLI 调用封装
+      fs_read.py               文件读取工具
+    server.py                   MCP stdio 服务器
 frontend/
   src/
-    components/       React 组件
-    hooks/            useAgentSocket（WebSocket + 状态管理）
-    api/              REST API 客户端
+    components/                React 组件
+    hooks/                     useAgentSocket（WebSocket + 状态管理）
+    api/                       REST API 客户端
 ```
+
+### 启用 PostgreSQL + pgvector RAG（可选）
+
+默认使用 SQLite FTS5，无需额外配置。如需启用语义检索 RAG：
+
+```bash
+export EDB_PG_URL="postgresql://postgres:password@localhost:5432/eda_agent"
+python3 -m uvicorn backend.main:app --port 8000
+```
+
+首次启动后端会自动执行 `backend/db/pg_schema.sql` 创建表结构。

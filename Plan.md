@@ -311,14 +311,14 @@ KiCad ERC 的错误 XML 只告诉你"pin_type mismatch at U1 pin 14"，但不解
 
 ### 四框架对比
 
-| 维度 | LangChain | LangGraph | LlamaIndex | Haystack |
-| --- | --- | --- | --- | --- |
-| 定位 | LLM 应用开发库 | **多智能体工作流编排引擎** | 知识检索 / RAG 专用 | NLP 流水线 / QA 专用 |
-| 工作流模型 | 链式（Chain） | **图状（Graph）** — 支持循环 | 索引 → 查询 | Pipeline |
-| ReAct 循环 | 支持但非原生 | **原生支持cyclic图** | 不支持 | 不支持 |
-| 多智能体编排 | 需自行实现 | **内置 Orchestrator 模式** | 不支持 | 不支持 |
-| 状态管理 | 有限 | **完整的状态传递与持久化** | 不适用 | 不适用 |
-| 学习曲线 | 陡峭（过于抽象） | 中等（图论直观） | 低（专注 RAG） | 中等 |
+| 维度       | LangChain | LangGraph              | LlamaIndex    | Haystack        |
+| -------- | --------- | ---------------------- | ------------- | --------------- |
+| 定位       | LLM 应用开发库 | **多智能体工作流编排引擎**        | 知识检索 / RAG 专用 | NLP 流水线 / QA 专用 |
+| 工作流模型    | 链式（Chain） | **图状（Graph）** — 支持循环   | 索引 → 查询       | Pipeline        |
+| ReAct 循环 | 支持但非原生    | **原生支持cyclic图**        | 不支持           | 不支持             |
+| 多智能体编排   | 需自行实现     | **内置 Orchestrator 模式** | 不支持           | 不支持             |
+| 状态管理     | 有限        | **完整的状态传递与持久化**        | 不适用           | 不适用             |
+| 学习曲线     | 陡峭（过于抽象）  | 中等（图论直观）               | 低（专注 RAG）     | 中等              |
 
 ### 选择 LangGraph 的核心理由
 
@@ -357,3 +357,355 @@ Orchestrator Agent (LangGraph StateGraph)
 - **LangChain**：过于泛化，Chain 线性结构不适合循环场景，ReAct 实现需要自己管理循环逻辑
 - **LlamaIndex**：专注 RAG 和知识检索，缺少 Agent 工作流编排能力，EDA 需要的是工作流而非检索
 - **Haystack**：面向 NLP/QA 场景，原生不支持 Agent 循环和多智能体编排，学习成本高但场景不匹配
+
+---
+
+## EDA-AI-Agent 实现架构
+
+### 架构图
+
+![EDA-AI-Agent-architecture](./EDA-AI-Agent-architecture.png)
+
+### 运行效果
+
+![Running_result](./Running_result.png)
+
+---
+
+### 技术栈
+
+| 层级           | 技术选型                               | 说明                                                   |
+| ------------ | ---------------------------------- | ---------------------------------------------------- |
+| **LLM 调用**   | LiteLLM                            | 统一接口调用 OpenAI / Anthropic / DeepSeek / Qwen / Ollama |
+| **Agent 框架** | LangGraph StateGraph               | ReAct 循环 + 多 Agent 编排 + 状态管理                         |
+| **协议层**      | MCP (Model Context Protocol)       | stdio 本地子进程，工具调用标准化                                  |
+| **向量数据库**    | **pgvector（优先）** / SQLite FTS5（备用） | RAG 语义检索元件库                                          |
+| **原理图格式**    | KiCad `.kicad_sch` S-expression    | LLM 直接生成，纯文本无需 KiCad 环境                              |
+| **ERC 验证**   | KiCad CLI（可选）                      | 无头模式运行 DRC/ERC，结果反馈 Agent                            |
+| **前端**       | React + TypeScript + WebSocket     | 实时流式对话 + 原理图预览                                       |
+
+---
+
+### 数据库设计：pgvector 优先 + SQLite fallback
+
+**设计原则：** 开发时无需准备 PostgreSQL，开箱即用；生产环境设置 `EDB_PG_URL` 开启完整 RAG 能力。
+
+#### 环境变量
+
+```bash
+# 启用 pgvector RAG（不设置则使用 SQLite FTS5）
+export EDB_PG_URL="postgresql://postgres:password@localhost:5432/eda_agent"
+```
+
+#### Fallback 逻辑
+
+```python
+# backend/mcp/tools/compdb.py
+
+def compdb_search(query: str, top_k: int = 5) -> CallToolResult:
+    """Search component database — pgvector RAG if available, SQLite FTS5 fallback."""
+    if os.environ.get("EDB_PG_URL"):
+        try:
+            from backend.db.pg_vector_store import search_components as _pg_search
+            results = _pg_search(query, top_k=top_k)
+            return CallToolResult(content=[TextContent(type="text", text=json.dumps(results))])
+        except Exception:
+            pass  # Fall through to SQLite
+    results = _sqlite_search(query, category="")[:top_k]
+    return CallToolResult(content=[TextContent(type="text", text=json.dumps(results))])
+
+def compdb_add(data: dict) -> CallToolResult:
+    """Add a component — pgvector if available, SQLite stub otherwise."""
+    if os.environ.get("EDB_PG_URL"):
+        try:
+            from backend.db.pg_vector_store import add_component as _pg_add
+            component_id = _pg_add(data)
+            return CallToolResult(content=[TextContent(type="text", text=json.dumps({"status": "ok", "id": component_id}))])
+        except Exception as e:
+            return CallToolResult(content=[TextContent(type="text", text=f"pgvector add failed: {e}")])
+    name = data.get("name", "unknown")
+    return CallToolResult(content=[TextContent(type="text", text=f"Component {name} added (SQLite only — set EDB_PG_URL for pgvector)")])
+```
+
+#### PostgreSQL + pgvector schema
+
+```sql
+-- backend/db/pg_schema.sql
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE TABLE components (
+    id SERIAL PRIMARY KEY,
+    lib_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    mpn TEXT,
+    category TEXT,
+    package TEXT,
+    jlc_part TEXT,
+    price NUMERIC,
+    stock INTEGER,
+    description TEXT
+);
+CREATE TABLE component_embeddings (
+    id SERIAL PRIMARY KEY,
+    component_id INTEGER REFERENCES components(id),
+    description_text TEXT,
+    embedding vector(1536)
+);
+CREATE INDEX ON component_embeddings USING ivfflat (embedding cosine_OPERATOR) WITH (lists = 100);
+```
+
+#### SQLite FTS5 fallback
+
+- 表结构：`id, lib_id, name, mpn, category, package, jlc_part, price, stock, description`
+- 全文搜索：FTS5 on `name + category + description`
+- 无 Embedding 检索，使用 LIKE 模糊匹配
+
+---
+
+### MCP Server 设计
+
+MCP Server 以 stdio 子进程运行，Agent 通过 `mcp_<server>_<tool>` 命名调用工具。
+
+| 工具                   | 说明                                  |
+| -------------------- | ----------------------------------- |
+| `mcp_compdb_search`  | 元件库语义检索（pgvector RAG 或 SQLite FTS5） |
+| `mcp_compdb_add`     | 添加自定义元件到数据库                         |
+| `mcp_kicad_validate` | 调用 KiCad CLI 运行 ERC，返回错误列表          |
+| `mcp_fs_read`        | 读取本地文件（如 KiCad 官方库符号列表）             |
+
+---
+
+### 多 Agent 流水线（Pipeline）
+
+```
+用户输入
+    ↓
+Req Agent（需求分析）→ 与用户多轮对话 → 输出结构化 requirements dict
+    ↓
+Design Agent（BOM 生成）→ 从 Component DB 选型 → 输出 BOM list
+    ↓
+KiCad Gen Agent（原理图生成）→ 生成 .kicad_sch S-expression 文本
+    ↓
+Validation Agent（ERC 验证）→ KiCad CLI 运行 ERC → 如有错误最多循环 3 次修复
+    ↓
+前端预览 + 下载
+```
+
+**关键设计：** ERC 验证失败后自动返回 Design Agent 重试（最多 3 次 correction_attempts），避免手动干预。
+
+---
+
+### 项目结构
+
+```
+backend/
+  main.py                      FastAPI 应用 + WebSocket
+  orchestrator/
+    __init__.py                 导出 Orchestrator, Session, build_orchestrator_graph, AgentState
+    orchestrator_module.py     Orchestrator.run() + Session + PipelineStage + SessionState
+    graph_builder.py           LangGraph StateGraph 构建（当前未在运行时调用）
+    langgraph_state.py         AgentState TypedDict
+  agents/
+    req_agent.py               需求分析 Agent
+    design_agent.py            BOM 设计 Agent
+    kicad_gen_agent.py         KiCad 原理图生成 Agent
+    validation_agent.py        ERC 验证 Agent
+  db/
+    pg_vector_store.py         pgvector RAG（EDB_PG_URL 时启用）
+    pg_schema.sql              PostgreSQL schema
+    sqlite_component_db.py    SQLite FTS5 fallback
+  mcp/
+    tools/
+      compdb.py                MCP compdb_search / compdb_add（pgvector 优先 + SQLite fallback）
+      kicad_cli.py             KiCad CLI 封装
+      fs_read.py               文件读取工具
+    server.py                  MCP stdio 服务器
+frontend/
+  src/
+    components/                React 组件
+    hooks/
+      useAgentSocket.ts        WebSocket + 状态管理
+    api/
+      client.ts                REST API 客户端
+tests/
+  test_e2e_pipeline.py         E2E 集成测试（标记 @pytest.mark.integration）
+```
+
+---
+
+## 竞品分析：AI EDA 工具全景
+
+### 第一类：概念设计 + 智能原理图生成（从想法到电路）
+
+| 工具               | 核心能力                                         | 对我们的意义                       |
+| ---------------- | -------------------------------------------- | ---------------------------- |
+| **Flux.ai**      | 浏览器版 eCAD，内置 Copilot，自然语言 → 原理图 + BOM，$20/月起 | **最直接的竞争对手**，验证了"自然语言→原理图"可行 |
+| **Circuit Mind** | 需画顶层架构框图输入，不是纯自然语言，面向专业团队                    | 输入方式不同，不是直接竞品                |
+| **Celus**        | 早期概念→原理图，可导出 Altium，偏框图输入                    | 无法验证，思路类似但非自然语言              |
+
+### 第二类：工业级 AI 辅助（布局与布线）
+
+| 工具                       | 核心能力                                 | 定位             |
+| ------------------------ | ------------------------------------ | -------------- |
+| **Cadence Allegro X AI** | 云端 AI 自动高密度 PCB 布局布线，严守 SI/PI/DFM 规则 | 布局工具，不是原理图生成   |
+| **Quilter / DeepPCB**    | 强化学习自动布线，上传 KiCad/Altium 文件即可        | 需先有设计文件，补充而非替代 |
+
+### 第三类：轻量级创客工具
+
+| 工具                  | 核心能力                                | 定位                |
+| ------------------- | ----------------------------------- | ----------------- |
+| **Cirkit Designer** | Arduino/ESP32 自动接线 + 生成驱动代码 + 浏览器仿真 | 创客/教学，不是正式 PCB 设计 |
+| **MockFlow / Miro** | 文本→示意图，适合文档展示                       | 无法导出 EDA 文件       |
+
+---
+
+## Flux.ai 深度分析
+
+### Flux Method 四原则
+
+Flux 的设计哲学，也是它的产品定位：
+
+1. **Never start from scratch** — 模板化、可复用组件库，组合已有模块而非从零生成
+2. **Work smart not hard** — AI 实时反馈避免设计错误（ERC/DRC 即时提示）
+3. **Better collaboration** — 链接分享 + 权限控制，团队协作
+4. **Stay in flow** — 单应用集成所有工作流（原理图→PCB→BOM→制造）
+
+### Flux Copilot 的技术架构
+
+| 组件        | 技术实现                                                                         |
+| --------- | ---------------------------------------------------------------------------- |
+| **AI 模型** | 通用 LLM（含 GPT-5 Beta）+ 自研"Copilot Experts"（封闭微调模型）                            |
+| **工具调用**  | `@library` 搜索元件库、`@simulator` SPICE 仿真、`@calculator` 计算参数、`@code` 生成代码       |
+| **上下文管理** | 对话线程内维持上下文，用户批准后 AI 直接在编辑器内修改设计                                              |
+| **工作流**   | Architecture Design → Component Research → Design Review → Testing Debugging |
+
+### 关键发现：Flux 真正的核心竞争力不是 LLM
+
+Flux 博客《Flux Copilot: Under the Hood》明确说：
+
+> "Copilot is NOT just an LLM — it combines LLM with **grounded structured data**"
+
+真正的竞争壁垒是 **grounding 数据层**：
+
+```
+750,000+ 元件库（含数据手册和元数据）
+    +
+活跃设计上下文（原理图、PCB、网络表、符号）
+    +
+用户偏好和可复用逻辑（Copilot Knowledge）
+    ↓
+↓ grounding 后再给通用 LLM
+↓ 减少幻觉，提升准确性
+```
+
+**结论：你不需要训练专用 LLM**。用通用 LLM（DeepSeek/Claude/GPT）+ 电路领域 grounding 数据 + 好的工具调用设计，效果可以和 Flux 接近。
+
+### Flux 的局限性（我们的机会点）
+
+- Flux **不导出 KiCad 文件**，输出是 Flux 自家私有格式，用户被锁定在平台内
+- 需要联网、每月付费，无法自部署
+- 闭源，无法对接私有 LLM（不适合企业内网场景）
+- 不支持 KiCad 官方生态（嘉立创 SMT 编号、KiCad 原生库）
+
+---
+
+## EDA-AI-Agent 差异化策略
+
+受 Flux.ai 分析启发，确定的差异化方向：
+
+| 维度         | Flux.ai        | EDA-AI-Agent                                  |
+| ---------- | -------------- | --------------------------------------------- |
+| **开源**     | ❌ 闭源 SaaS      | ✅ 开源，可 GitHub 部署                              |
+| **输出格式**   | 私有格式，不导出 KiCad | ✅ 原生 `.kicad_sch`，与 KiCad 完全兼容                |
+| **LLM 选择** | 锁定 GPT（封闭）     | ✅ LiteLLM 统一接口，支持 DeepSeek/Claude/Qwen/Ollama |
+| **工具协议**   | 私有工具调用         | ✅ 标准 MCP 协议，可扩展                               |
+| **验证闭环**   | Flux 内部检查      | ✅ KiCad CLI ERC，错误语义翻译 → 自动修复循环               |
+| **中文支持**   | 偏英文            | ✅ 中文优先，嘉立创 JLC 编号对接                           |
+| **费用**     | $20/月起         | ✅ 自部署零订阅费                                     |
+
+### 核心技术对应关系
+
+| Flux 的壁垒                           | EDA-AI-Agent 的实现                                          |
+| ---------------------------------- | --------------------------------------------------------- |
+| 750,000+ 元件库 + datasheet grounding | KiCad 官方符号库索引（SQLite）+ 元件参数 pgvector RAG                  |
+| 活跃设计上下文（原理图/网络表）                   | LangGraph AgentState：bom + schematic_content + erc_errors |
+| Copilot Knowledge（用户偏好）            | MemorySaver checkpointer + Session 持久化                    |
+| @library / @calculator / @code     | MCP tools：compdb_search / kicad_validate / fs_read        |
+| 编辑器内直接修改                           | 生成 `.kicad_sch` 文本文件，KiCad 用户自行打开                         |
+
+---
+
+## 面向 Flux 对齐的四阶段流水线（重新设计）
+
+受 Flux Method 启发，将原有 Pipeline 对齐 Flux 的工作流顺序：
+
+```
+Stage 1: Architecture Design（需求分析 + 架构设计）
+  输入：自然语言需求
+  输出：结构化需求文档 + 顶层架构描述（文字）
+  Agent：Req Agent（多轮追问）
+  工具：电路知识 RAG（检索相似参考设计）
+
+Stage 2: Component Research（元件选型）
+  输入：结构化需求
+  输出：BOM 列表（lib_id + 规格 + 供应商 + JLC 编号）
+  Agent：Design Agent（RAG 驱动选型）
+  工具：compdb_search（pgvector / SQLite FTS5）
+
+Stage 3: Schematic Generation（原理图生成）
+  输入：BOM + 需求
+  输出：.kicad_sch S-expression 文本
+  Agent：KiCad Gen Agent（模板填充 + LLM 参数生成）
+  工具：S-expression 模板引擎、kicad_validate
+
+Stage 4: Design Review & Verification（设计评审）
+  输入：.kicad_sch
+  输出：ERC 报告 + 中文错误解释 + 修正原理图（最多 3 次循环）
+  Agent：Validation Agent
+  工具：KiCad CLI ERC / DRC
+```
+
+### 关键升级：S-expression 模板引擎
+
+受 Flux "Never start from scratch" 原则启发：
+
+```
+预定义可复用子电路模块（S-expression 模板）：
+  - LDO_5V_to_3V3_template
+  - NE555_astable_oscillator_template
+  - I2C_sensor_interface_template（含 4.7kΩ 上拉）
+  - TMOSFET_reverse_protection_template
+  - STM32F4_minimal_boot_circuit_template
+
+Agent 选型时：
+  复杂电路 → 从模块库组合（不从零生成）
+  简单电路 → LLM 直接生成 S-expression
+```
+
+### 关键升级：ERC 错误语义翻译层
+
+这是 EDA-AI-Agent 相对 Flux 的独特价值点：
+
+```
+KiCad ERC 原始输出：
+  "pin_type mismatch at U1 pin 14"
+
+EDA-AI-Agent 翻译后：
+  "STM32 的 BOOT0 引脚（U1 Pin 14）需要通过 10kΩ 下拉电阻
+   接 GND，否则芯片上电后进入 Bootloader 模式无法正常启动。
+   建议：在 BOOT0 和 GND 之间添加 R_BOOT0（10kΩ）。"
+```
+
+---
+
+## 当前实现状态（截至 2026-05-21）
+
+- ✅ LangGraph StateGraph Orchestrator（主循环 + 状态管理）
+- ✅ 四个 Subagent（Req / Design / KiCad Gen / Validation）
+- ✅ MCP Server（stdio 子进程，6 个工具）
+- ✅ pgvector RAG（EDB_PG_URL 启用）+ SQLite FTS5 fallback
+- ✅ FastAPI WebSocket 后端
+- ✅ React + TypeScript 前端
+- ✅ E2E 集成测试（test_e2e_pipeline.py）
+- ⬜ S-expression 模板引擎（子电路模块库）
+- ⬜ ERC 错误语义翻译层（中文 + 修复建议）
+- ⬜ KiCad 官方符号库全量索引（17,000+ lib_id）

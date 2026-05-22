@@ -1,3 +1,14 @@
+# Dual License Notice
+
+This project is licensed under two distinct licenses:
+
+1. **Personal / Non-Commercial Use**
+   Free for personal, non-commercial purposes under the **MIT License**.
+
+2. **Commercial Use**
+   Requires a **paid commercial license**.
+   See [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md) for details.
+
 <div align="center">
 
 # EDA-AI-Agent

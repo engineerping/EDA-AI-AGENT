@@ -1,3 +1,14 @@
+# Dual License Notice
+
+This project is licensed under two distinct licenses:
+
+1. **Personal / Non-Commercial Use**
+   Free for personal, non-commercial purposes under the **MIT License**.
+
+2. **Commercial Use**
+   Requires a **paid commercial license**.
+   See [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md) for details.
+
 <div align="center">
 
 # EDA-AI-Agent
@@ -14,8 +25,11 @@
 
 ---
 
-> 用自然语言描述电路需求，AI 通过国伦对话分析需求细节，自动完成元器件选型、生成.kicad_sch 格式的电路图描述文本文件，然后应用 kicad-cli 对电路图进行验证，
-最终的电路图直接在浏览器中预览，也可以在 KiCad 软件中打开。
+> 用自然语言描述电路需求，AI 通过国伦对话分析需求细节，
+> 自动完成元器件选型、生成.kicad_sch 格式的电路图描述文本文件，
+> 然后应用 kicad-cli 对电路图进行验证，
+> 最终的电路图直接在浏览器中预览，也可以在 KiCad 软件中打开。
+
 > 关于最流行的开源 EDA（Electronic Design Automation） 软件 KiCar，请参阅 https://www.kicad.org/ 。
 
 </div>

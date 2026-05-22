@@ -25,7 +25,11 @@ This project is licensed under two distinct licenses:
 
 ---
 
-> Describe your circuit in natural language — AI analyzes requirements through multi-turn dialogue, automatically selects components, generates a .kicad_sch formatted schematic text file, then validates it via kicad-cli. The final schematic is previewed directly in the browser and can also be opened in the KiCad software.
+> Describe your circuit in natural language — AI analyzes requirements through multi-turn dialogue,
+> automatically selects components, generates a .kicad_sch formatted schematic text file,
+> then validates it via kicad-cli.
+> The final schematic is previewed directly in the browser and can also be opened in the KiCad software.
+
 > For more on KiCad, the most popular open-source EDA (Electronic Design Automation) software, see https://www.kicad.org/.
 
 </div>
